@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
-
+import { useLedApi } from '../api/ledApi';
 import { commonStyles } from '../styles/common';
+import { useConnection } from "../api/ConnectionContext";
 
 export interface Priority {
   active: boolean;
@@ -146,36 +147,8 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   // Track current selected input
   const [currentInput, setCurrentInput] = useState<Priority | null>(null);
 
-  const baseUrl = "http://192.168.0.120:8090";
-
-  async function getLedPositionData(): Promise<LedPositionData[]> {
-    const url = `${baseUrl}/json-rpc`;
-
-    const payload = {
-      command: "serverinfo",
-    };
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    console.log("getLedPositionData >>>>",data.info.leds.length);
-
-    if (data?.info?.leds) {
-      ledPositionRef.current = data.info.leds;
-    }
-    return data.info.leds
-  }
+  const { getLedPositionData } = useLedApi();
+  // const { connectWS,disconnectWS } = useConnection();
 
   const transformPosition: TransformPositionFunction = async (
     ledPositions,
