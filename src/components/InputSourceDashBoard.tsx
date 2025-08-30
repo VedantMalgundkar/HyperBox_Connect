@@ -105,6 +105,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
 }) => {
     const wsRef = useRef<WebSocket | null>(null);
     const ledPositionRef = useRef<LedPositionData[] | null>(null);
+    const { ws, disconnectWS } = useConnection();
 
     const tiles: [InputTile, InputTile, InputTile] = [
         {
@@ -147,8 +148,12 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   // Track current selected input
   const [currentInput, setCurrentInput] = useState<Priority | null>(null);
 
-  const { getLedPositionData } = useLedApi();
-  // const { connectWS,disconnectWS } = useConnection();
+  const { getLedPositionData: fetchLedPosition } = useLedApi();
+
+  const getLedPositionData = async () => {
+    ledPositionRef.current = await fetchLedPosition();
+    return ledPositionRef.current;
+  };
 
   const transformPosition: TransformPositionFunction = async (
     ledPositions,
@@ -265,12 +270,30 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
     return areTheseTopColorsFallback && areTheseBottomColorsFallback;
   }
 
-  const checkHdmiFallBack = async (ledPosition: LedPositionData[], ledcolors: number[]):Promise<boolean | undefined> => {
-    if(!ledPosition) return;
-    const trfLedPosition = await transformPosition(ledPosition,ledcolors,getLedPositionData);
-    const isItFallback = checkTopBottomLedForFallback(trfLedPosition.directions.top,trfLedPosition.directions.bottom);
-    return isItFallback
-  }
+  const checkHdmiFallBack = async (
+    ledPosition: LedPositionData[],
+    ledcolors: number[]
+  ): Promise<boolean | undefined> => {
+    try {
+      if (!ledPosition) return;
+      
+      const trfLedPosition = await transformPosition(
+        ledPosition,
+        ledcolors,
+        getLedPositionData
+      );
+      
+      const isItFallback = checkTopBottomLedForFallback(
+        trfLedPosition.directions.top,
+        trfLedPosition.directions.bottom
+      );
+      
+      return isItFallback;
+    } catch (err) {
+      console.error("❌ checkHdmiFallBack failed:", err);
+      return undefined; // or false depending on how you want to handle failure
+    }
+  };
 
   const decideIsSelectedComponent = (source1: string ,source2: string) : boolean => {
     if (source1.toLowerCase() == "color" && (source2.toLowerCase() == "color" || source2.toLowerCase() == "effect")){
@@ -279,40 +302,43 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
     return source1.toLowerCase() == source2.toLowerCase();
   }
 
-  useEffect(()=>{
-    getLedPositionData()
-  },[])
+  useEffect(() => {
+    const fetchLedData = async () => {
+      try {
+        await getLedPositionData();
+      } catch (err) {
+        console.error("❌ Failed to get LED position data:", err);
+      }
+    };
 
-  const connectWS = () => {
-    try {
-      const ws = new WebSocket("ws://192.168.0.120:8090");
+    fetchLedData();
+  }, []);
 
-      ws.onopen = () => {
-        console.log("✅ Connected!");
-        wsRef.current = ws;
-      };
+  useEffect(() => {
+    if (!ws) return;
 
-      ws.onmessage = async (msg) => {
-        
-        const wsResponse: WsResponse = JSON.parse(msg.data);
-      
-        handleWsResponse(wsResponse);
-      };
+    ws.onopen = () => {
+      console.log("✅ WS connected:", ws.url);
+    };
 
-      ws.onerror = (err:any) => {
-        console.log("Error:", JSON.stringify(err));
-      };
+    ws.onmessage = (msg) => {
+      const wsResponse: WsResponse = JSON.parse(msg.data);
+      handleWsResponse(wsResponse);
+    };
 
-      ws.onclose = () => {
-        console.log("🔌 Disconnected");
-        wsRef.current = null;
-      };
-    } catch (e:any) {
-      console.log("❌ Exception: " + e.toString());
-    }
-  };
+    ws.onerror = (err) => {
+      console.error("⚠️ WS error:", err);
+    };
+
+    ws.onclose = () => {
+      console.log("🚪 WS closed");
+      // setIsConnected(false);
+    };
+  }, [ws]);
 
   async function handleWsResponse(wsResponse: WsResponse) {
+
+    // console.log("ran ws res >>> handleWsResponse");
     switch (wsResponse.command) {
       case "priorities-update":
         
@@ -329,6 +355,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
         break;
 
       case "ledcolors-ledstream-update":
+        // console.log("ledcolors-ledstream-update case >>");
         const flatColors = wsResponse.result.leds;
 
           if(ledPositionRef.current) {
@@ -353,21 +380,27 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
     }
   }
 
-  const sendMessage = (msg:any) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(msg));
-      console.log("📤 Sent: " + JSON.stringify(msg));
+  const sendMessage = (msg: any) => {
+    if (!ws) {
+      console.warn("⚠️ No WebSocket instance, cannot send");
+      return;
+    }
+
+    if (ws.readyState === WebSocket.OPEN) {
+      const payload = typeof msg === "string" ? msg : JSON.stringify(msg);
+      ws.send(payload);
+      console.log("📤 Sent:", payload);
     } else {
-      console.log("⚠️ Not connected, cannot send");
+      console.warn("⚠️ WebSocket not open, readyState:", ws.readyState);
     }
   };
 
-  const disconnectWS = () => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-  };
+  // const disconnectWS = () => {
+  //   if (wsRef.current) {
+  //     wsRef.current.close();
+  //     wsRef.current = null;
+  //   }
+  // };
 
   return (
   <View style={styles.container}>
@@ -418,7 +451,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
 
     {/* Column of buttons */}
     <View style={styles.buttonColumn}>
-      <Button title="connect" onPress={connectWS} />
+      {/* <Button title="connect" onPress={connectWS} /> */}
       <Button title="disconnect" onPress={disconnectWS} />
       <Button title="getLedPosition" onPress={getLedPositionData} />
       <Button

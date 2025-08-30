@@ -1,5 +1,5 @@
 // src/api/ConnectionContext.tsx
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { BleManager } from "react-native-ble-plx";
 
@@ -23,7 +23,6 @@ type ConnectionContextType = {
 
   // WS
   ws: WebSocket | null;
-  connectWS: (url?: string) => void;
   disconnectWS: () => void;
 
   // BLE
@@ -78,11 +77,7 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     });
 
     instance.interceptors.request.use(
-      (config) => {
-        // const token = "YOUR_JWT_TOKEN";
-        // if (token) config.headers.Authorization = `Bearer ${token}`;
-        return config;
-      },
+      (config) => config,
       (error) => Promise.reject(error)
     );
 
@@ -97,7 +92,7 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     return instance;
   }, [baseUrl]);
 
-  // Generic request wrapper
+  // Generic request wrappers
   const request = async <T = any>(
     url: string,
     method: "GET" | "POST" | "PUT" | "DELETE",
@@ -108,7 +103,7 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     const res = await api(config);
     return res.data;
   };
-  
+
   const HyperRequest = async <T = any>(
     url: string,
     method: "GET" | "POST" | "PUT" | "DELETE",
@@ -120,54 +115,50 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     return res.data;
   };
 
+  // --- WebSocket ---
   const makeWsUrl = (source: string): string => {
     let wsUrl = source.replace(/^http/, "ws");
 
-    // if port exists, replace it; otherwise, append :8090
     if (/:\d+/.test(wsUrl)) {
       wsUrl = wsUrl.replace(/:\d+/, ":8090");
     } else {
-      // no port → add :8090 before any path
       wsUrl = wsUrl.replace(/(ws:\/\/[^/]+)/, "$1:8090");
     }
 
     return wsUrl;
   };
 
-  // WebSocket state
   const [ws, setWs] = useState<WebSocket | null>(null);
-  const connectWS = (url?: string) => {
-    if (!url && !baseUrl) {
-      console.error("No WebSocket URL or baseUrl provided");
+
+  useEffect(() => {
+    if (!baseUrl) {
+      if (ws) {
+        ws.close();
+        setWs(null);
+      }
       return;
     }
 
-    const source = url ?? baseUrl!;
-    const wsUrl = makeWsUrl(source);
+    const wsUrl = makeWsUrl(baseUrl);
+    const socket = new WebSocket(wsUrl);
+    setWs(socket);
 
-    if (!wsUrl) {
-      console.error("Invalid WebSocket URL:", source);
-      return;
-    }
+    socket.onopen = () => console.log("✅ WebSocket connected:", wsUrl);
+    // socket.onerror = (err) => console.error("❌ WebSocket error:", err);
+    // socket.onclose = () => console.log("⚠️ WebSocket closed:", wsUrl);
 
-    try {
-      const socket = new WebSocket(wsUrl);
-      setWs(socket);
+    return () => {
+      socket.close();
+      setWs(null);
+    };
+  }, [baseUrl]);
 
-      socket.onopen = () => console.log("✅ WebSocket connected:", wsUrl);
-      socket.onerror = (err) => console.error("❌ WebSocket error:", err);
-      socket.onclose = () => console.log("⚠️ WebSocket closed:", wsUrl);
-    } catch (err) {
-      console.error("Failed to create WebSocket:", err);
-    }
-  };
-  
   const disconnectWS = () => {
     ws?.close();
     setWs(null);
   };
 
-  // BLE
+  // --- BLE ---
   const [bleDeviceId, setBleDeviceId] = useState<string | null>(null);
   const bleManager = useMemo(() => new BleManager(), []);
 
@@ -180,7 +171,6 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
         request,
         HyperRequest,
         ws,
-        connectWS,
         disconnectWS,
         bleManager,
         bleDeviceId,
