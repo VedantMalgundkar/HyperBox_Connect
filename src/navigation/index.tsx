@@ -15,7 +15,7 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator
       initialRouteName="MdnsScanner"
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: true }}
     >
       <Stack.Screen
         name="MdnsScanner"

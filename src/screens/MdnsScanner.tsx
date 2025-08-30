@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Button } from 'react-native';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
+import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import Zeroconf from 'react-native-zeroconf';
 import HyperhdrDiscoveryTile, { HyperhdrDevice } from '../components/HyperhdrDiscoveryTile';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useConnection } from '../api/ConnectionContext';
 
 import { RootStackParamList } from '../navigation';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
 // ✅ Type the navigation hook
 type MdnsScannerNavigationProp = NativeStackNavigationProp<
@@ -39,29 +40,45 @@ export default function MdnsScanner() {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: "My Devices",
+      headerStyle: {
+        backgroundColor: "#6200ee",
+      },
+      headerTintColor: "#fff",
+      headerRight: () => (
+        <TouchableOpacity onPress={() => console.log('add pressed')}>
+          <MaterialDesignIcons name="plus" size={28} color="#fff" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
   const handleHyperhdrDiscoveryTileClick = (url: string) => {
     setBaseUrl(url);
   } 
 
   return (
     <View style={styles.container}>
-      <Button
+      {/* <Button
         title="Go to Dashboard"
         onPress={() => navigation.navigate('MainDashBoard')}
-      />
-      <Text style={styles.title}>mDNS HyperHDR Scanner</Text>
+      /> */}
+      {/* <Text style={styles.title}>mDNS HyperHDR Scanner</Text> */}
       <FlatList
         data={Object.values(services)}
         keyExtractor={(item) => item.name}
         renderItem={({ item }) => (
           <HyperhdrDiscoveryTile device={item} onConnect={handleHyperhdrDiscoveryTileClick}/>
         )}
+        style={{ paddingVertical:15 }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  container: { flex: 1, paddingHorizontal: 15, backgroundColor: '#fff' },
   title: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
 });

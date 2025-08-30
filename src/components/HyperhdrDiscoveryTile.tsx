@@ -6,6 +6,9 @@ import {
   TouchableOpacity, 
   StyleSheet 
 } from "react-native";
+import { useConnection } from "../api/ConnectionContext";
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
+import { commonStyles } from "../styles/common";
 
 export interface HyperhdrDevice {
   name: string;
@@ -31,17 +34,14 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) =>  {
 
   const [name, setName] = useState(displayName.trim() || "");
   const [isEditing, setIsEditing] = useState(false);
-  const [isSelected, setIsSelected] = useState(false);
-  const [res,setRes] = useState('');
+  const { baseUrl } = useConnection();
 
-  // randomize connected state on mount
-  useEffect(() => {
-    const random = Math.random() > 0.5;
-    // setIsSelected(random);
-  }, []);
+  const customBackendUrl =  `http://${device.host}:${device.port}`
+
+  const isSelected = customBackendUrl == baseUrl;
 
   return (
-    <View style={[styles.container, isSelected && styles.selected]}>
+    <View style={[styles.container, commonStyles.card, isSelected && styles.selected]}>
       <View style={styles.tile}>
         {isEditing ? (
           <TextInput
@@ -52,21 +52,30 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) =>  {
             onSubmitEditing={() => setIsEditing(false)}
           />
         ) : (
-          <Text style={styles.name} numberOfLines={1}>
-            {name}
-          </Text>
+          <View>
+            <Text style={styles.name} numberOfLines={1}>
+              {name}
+            </Text>
+            <Text style={styles.host} numberOfLines={1}>
+              Host: {device.host}
+            </Text>
+          </View>
         )}
 
         {isSelected ? (
           <View style={styles.actions}>
-            <TouchableOpacity
-              onPress={isEditing ? () => setIsEditing(false) : () => setIsEditing(true)}
-            >
-              <Text style={styles.icon}>{isEditing ? "✔" : "✎"}</Text>
-            </TouchableOpacity>
-            {isEditing && (
-              <TouchableOpacity onPress={() => setIsEditing(false)}>
-                <Text style={styles.icon}>✖</Text>
+            {isEditing ? (
+              <View style={[styles.actions]}>
+                <TouchableOpacity onPress={() => setIsEditing(false)}>
+                  <MaterialDesignIcons name="check" size={25} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setIsEditing(false)}>
+                  <MaterialDesignIcons name="close" size={25} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity onPress={() => setIsEditing(true)}>
+                <MaterialDesignIcons name="pencil" size={25} />
               </TouchableOpacity>
             )}
           </View>
@@ -74,19 +83,8 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) =>  {
           <TouchableOpacity
             style={styles.connectBtn}
             onPress={() => {
-                const selectedDevice = {
-                ...device,
-                ...(device.host && device.port && {
-                  customBackendUrl: `http://${device.host}:${device.port}`,
-                }),
-                ...(device.host && {
-                  hyperHdrUrl: `http://${device.host}:8090`,
-                }),
-              };
-
-              console.log("selected device >>>> ", selectedDevice);
-              if(selectedDevice?.customBackendUrl){
-                onConnect(selectedDevice.customBackendUrl);
+              if (customBackendUrl) {
+                onConnect(customBackendUrl);
               }
             }}
           >
@@ -100,22 +98,17 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) =>  {
           <Text style={styles.badgeText}>Connected</Text>
         </View>
       )}
-      <Text>{res}</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
-    marginHorizontal: 3,
     borderRadius: 12,
-    backgroundColor: "#fffbff",
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
-    elevation: 2,
     position: "relative",
+    minHeight:62,
+    flexDirection:"column",
+    justifyContent:"center",
   },
   selected: {
     borderWidth: 1,
@@ -125,12 +118,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingLeft: 15,
-    paddingRight: 8,
+    paddingHorizontal: 12,
   },
   name: {
     flex: 1,
     fontSize: 16,
+  },
+  host: {
+    fontSize:10,
   },
   input: {
     flex: 1,
@@ -142,6 +137,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
   icon: {
     fontSize: 18,
@@ -160,7 +156,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: 0,
+    top: -6,
     right: 12,
     backgroundColor: "#6200EE",
     borderRadius: 6,
