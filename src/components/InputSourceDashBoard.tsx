@@ -103,52 +103,52 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   labelStyle,
   gap = 12,
 }) => {
-    const wsRef = useRef<WebSocket | null>(null);
-    const ledPositionRef = useRef<LedPositionData[] | null>(null);
-    const { ws, disconnectWS } = useConnection();
+  const ledPositionRef = useRef<LedPositionData[] | null>(null);
+  const { ws } = useConnection();
+  const [loading, setLoading] = useState(false);
 
-    const tiles: [InputTile, InputTile, InputTile] = [
-        {
-            key: 'hdmi',
-            label: 'HDMI',
-            icon: <MaterialDesignIcons name="hdmi-port" size={28} />,
-            
-            componentId: "VIDEOGRABBER", 
-            origin: "System", 
-            owner: "USB Video: USB Video (video0)", 
-            priority: 240, 
-            visible: false,
-            active: false,
-        },
-        {
-            key: 'network',
-            label: 'Network',
-            icon: <MaterialDesignIcons name="cloud" size={28} />,
-            
-            componentId: "COLOR",
-            origin: "JsonRpc@::1",
-            priority: 100,
-            value: {"HSL": [], "RGB": []},
-            visible: false,
-            active: false,
-        },
-        {
-            key: 'grabber',
-            label: 'Grabber',
-            icon: <MaterialDesignIcons name="android" size={28} />,
+  const tiles: [InputTile, InputTile, InputTile] = [
+    {
+      key: 'hdmi',
+      label: 'HDMI',
+      icon: <MaterialDesignIcons name="hdmi-port" size={28} />,
 
-            componentId: "PROTOSERVER", 
-            origin: "Proto@::ffff:192.168.0.118", 
-            priority: 50, 
-            visible: false,
-            active: false,
-        }
-    ];
+      componentId: "VIDEOGRABBER",
+      origin: "System",
+      owner: "USB Video: USB Video (video0)",
+      priority: 240,
+      visible: false,
+      active: false,
+    },
+    {
+      key: 'network',
+      label: 'Network',
+      icon: <MaterialDesignIcons name="cloud" size={28} />,
+
+      componentId: "COLOR",
+      origin: "JsonRpc@::1",
+      priority: 100,
+      value: { "HSL": [], "RGB": [] },
+      visible: false,
+      active: false,
+    },
+    {
+      key: 'grabber',
+      label: 'Grabber',
+      icon: <MaterialDesignIcons name="android" size={28} />,
+
+      componentId: "PROTOSERVER",
+      origin: "Proto@::ffff:192.168.0.118",
+      priority: 50,
+      visible: false,
+      active: false,
+    }
+  ];
 
   // Track current selected input
   const [currentInput, setCurrentInput] = useState<Priority | null>(null);
 
-  const { getLedPositionData: fetchLedPosition } = useLedApi();
+  const { getLedPositionData: fetchLedPosition, getCurrentActiveInput } = useLedApi();
 
   const getLedPositionData = async () => {
     ledPositionRef.current = await fetchLedPosition();
@@ -211,7 +211,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
     };
   };
 
-  function checkTopBottomLedForFallback(topLeds: TrfLedPosition[], bottomLeds: TrfLedPosition[]) : boolean {
+  function checkTopBottomLedForFallback(topLeds: TrfLedPosition[], bottomLeds: TrfLedPosition[]): boolean {
     const noOfTopLeds = topLeds.length;
     const noOfBottomLeds = bottomLeds.length;
 
@@ -247,7 +247,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
           topFallbackColors[currTopColor]++;
         }
       }
-      
+
       if (ledInd < noOfBottomLeds) {
         const currBottomColor = bottomLeds[ledInd]?.color?.join(",") ?? null;
         if (currBottomColor && currBottomColor in bottomFallbackColors) {
@@ -276,18 +276,18 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   ): Promise<boolean | undefined> => {
     try {
       if (!ledPosition) return;
-      
+
       const trfLedPosition = await transformPosition(
         ledPosition,
         ledcolors,
         getLedPositionData
       );
-      
+
       const isItFallback = checkTopBottomLedForFallback(
         trfLedPosition.directions.top,
         trfLedPosition.directions.bottom
       );
-      
+
       return isItFallback;
     } catch (err) {
       console.error("❌ checkHdmiFallBack failed:", err);
@@ -295,12 +295,33 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
     }
   };
 
-  const decideIsSelectedComponent = (source1: string ,source2: string) : boolean => {
-    if (source1.toLowerCase() == "color" && (source2.toLowerCase() == "color" || source2.toLowerCase() == "effect")){
+  const decideIsSelectedComponent = (source1: string, source2: string): boolean => {
+    if (source1.toLowerCase() == "color" && (source2.toLowerCase() == "color" || source2.toLowerCase() == "effect")) {
       return true
     }
     return source1.toLowerCase() == source2.toLowerCase();
   }
+
+  const fetchCurrentInputSource = async () => {
+    try {
+      setLoading(true);
+      const res = await getCurrentActiveInput();
+      const priority: Priority = res.data
+      if (!priority?.isFallBack) {
+        setCurrentInput(priority);
+      }
+    } catch (error: any) {
+      console.log(error.message);
+      // Toast.show({
+      //   type: 'error',
+      //   text1: error.message ?? 'Error in Fetching Current Input',
+      //   position: 'bottom',
+      //   visibilityTime: 2000,
+      // });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchLedData = async () => {
@@ -310,8 +331,28 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
         console.error("❌ Failed to get LED position data:", err);
       }
     };
-
     fetchLedData();
+    fetchCurrentInputSource()
+
+    sendMessage({
+      command: "ledcolors",
+      tan: 1,
+      subcommand: "ledstream-start",
+    })
+
+    sendMessage({
+      command: "serverinfo",
+      tan: 1,
+      subscribe: ["priorities-update"],
+    })
+
+    return () => {
+      sendMessage({
+        command: "ledcolors",
+        tan: 1,
+        subcommand: "ledstream-stop",
+      })
+    }
   }, []);
 
   useEffect(() => {
@@ -332,25 +373,30 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
 
     ws.onclose = () => {
       console.log("🚪 WS closed");
-      // setIsConnected(false);
     };
   }, [ws]);
 
   async function handleWsResponse(wsResponse: WsResponse) {
 
-    // console.log("ran ws res >>> handleWsResponse");
     switch (wsResponse.command) {
       case "priorities-update":
-        
+
         const priorities = wsResponse.data.priorities;
         const activePriority = priorities.find(
           (p) => p.componentId !== "VIDEOGRABBER" && p.visible
         );
 
+        if (loading) {
+          return;
+        }
+
+        // console.log("ran ws res >>> handleWsResponse",activePriority);
         if (activePriority) {
           setCurrentInput(activePriority);
         } else {
-          setCurrentInput(null);
+          if (currentInput?.componentId !== "VIDEOGRABBER") {
+            setCurrentInput(null);
+          }
         }
         break;
 
@@ -358,23 +404,33 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
         // console.log("ledcolors-ledstream-update case >>");
         const flatColors = wsResponse.result.leds;
 
-          if(ledPositionRef.current) {
-            const isFallback = await checkHdmiFallBack(ledPositionRef.current,flatColors);
-            // console.log("falback check >>>",isFallback);
+        if (loading) {
+          return;
+        }
 
-            if(!isFallback) {
-              setCurrentInput({
-                componentId: "VIDEOGRABBER", 
-                origin: "System", 
-                owner: "USB Video: USB Video (video0)", 
-                priority: 240, 
-                visible: false,
+        if (ledPositionRef.current) {
+          const isFallback = await checkHdmiFallBack(ledPositionRef.current, flatColors);
+          // console.log("falback check >>>",isFallback);
+
+          setCurrentInput(prev => {
+            if (!isFallback && !prev) {
+              return {
+                componentId: "VIDEOGRABBER",
+                origin: "System",
+                owner: "USB Video: USB Video (video0)",
+                priority: 240,
+                visible: true,
                 active: false,
-              });
-            } else {
-              setCurrentInput(null);
+              };
             }
-          }
+
+            if (isFallback && prev?.componentId === "VIDEOGRABBER") {
+              return null;
+            }
+
+            return prev;
+          });
+        }
 
         break;
     }
@@ -403,12 +459,12 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   // };
 
   return (
-  <View style={styles.container}>
-    {/* Row of 3 tiles */}
     <View style={[styles.row, { columnGap: gap }, containerStyle]}>
+      {/* Row of 3 tiles */}
       {tiles?.map((tile) => {
-        // const isSelected = currentInput?.label === tile!.label;
-        const isSelected = currentInput && decideIsSelectedComponent(tile.componentId, currentInput.componentId);
+        const isSelected =
+          currentInput &&
+          decideIsSelectedComponent(tile.componentId, currentInput.componentId);
 
         return (
           <View
@@ -416,7 +472,8 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
             style={[
               styles.box,
               commonStyles.center,
-              isSelected ? styles.boxSelected : commonStyles.card,
+              commonStyles.card,
+              isSelected && styles.boxSelected,
               boxStyle,
             ]}
           >
@@ -424,12 +481,15 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
               {tile!.icon ? (
                 <View style={styles.iconWrap}>
                   {React.isValidElement(tile!.icon)
-                    ? React.cloneElement(tile!.icon as React.ReactElement<{ style?: any }>, {
+                    ? React.cloneElement(
+                      tile!.icon as React.ReactElement<{ style?: any }>,
+                      {
                         style: [
                           (tile!.icon.props as any).style,
-                          { color: isSelected ? '#fff' : '#0B0F14' },
+                          { color: isSelected ? "#fff" : "#0B0F14" },
                         ],
-                      })
+                      }
+                    )
                     : tile!.icon}
                 </View>
               ) : null}
@@ -437,7 +497,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
                 numberOfLines={1}
                 style={[
                   styles.label,
-                  { color: isSelected ? '#fff' : '#0B0F14' },
+                  { color: isSelected ? "#fff" : "#0B0F14" },
                   labelStyle,
                 ]}
               >
@@ -448,45 +508,8 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
         );
       })}
     </View>
+  );
 
-    {/* Column of buttons */}
-    <View style={styles.buttonColumn}>
-      {/* <Button title="connect" onPress={connectWS} /> */}
-      <Button title="disconnect" onPress={disconnectWS} />
-      <Button title="getLedPosition" onPress={getLedPositionData} />
-      <Button
-        title="start-led-stream"
-        onPress={() =>
-          sendMessage({
-            command: "ledcolors",
-            tan: 1,
-            subcommand: "ledstream-start",
-          })
-        }
-      />
-      <Button
-        title="stop-led-stream"
-        onPress={() =>
-          sendMessage({
-            command: "ledcolors",
-            tan: 1,
-            subcommand: "ledstream-stop",
-          })
-        }
-      />
-      <Button
-        title="sub input update"
-        onPress={() =>
-          sendMessage({
-          command: "serverinfo",
-          tan: 1,
-          subscribe: ["priorities-update"],
-        })
-        }
-      />
-    </View>
-  </View>
-);
 };
 
 export default InputSourceDashBoard;
@@ -500,11 +523,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "stretch",
-    marginBottom: 20, // spacing between tiles and buttons
   },
   buttonColumn: {
     flexDirection: "column",
-    gap: 12, // RN >=0.71 supports `gap`
+    gap: 12,
   },
   box: {
     flex: 1,
