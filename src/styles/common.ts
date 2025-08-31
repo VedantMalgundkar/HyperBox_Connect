@@ -18,6 +18,10 @@ export const commonStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  // For column layout
+  column: {
+    flexDirection: 'column',
+  },
   // Main container
   container: {
     flex: 1,

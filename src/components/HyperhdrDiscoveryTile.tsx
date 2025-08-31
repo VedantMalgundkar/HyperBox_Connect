@@ -104,10 +104,10 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) =>  {
 
 const styles = StyleSheet.create({
   container: {
+    ...commonStyles.column,
     borderRadius: 12,
     position: "relative",
     minHeight:62,
-    flexDirection:"column",
     justifyContent:"center",
   },
   selected: {
@@ -115,8 +115,7 @@ const styles = StyleSheet.create({
     borderColor: "#6200EE",
   },
   tile: {
-    flexDirection: "row",
-    alignItems: "center",
+    ...commonStyles.row,
     justifyContent: "space-between",
     paddingHorizontal: 12,
   },
@@ -135,8 +134,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   actions: {
-    flexDirection: "row",
-    alignItems: "center",
+    ...commonStyles.row,
     gap: 8,
   },
   icon: {

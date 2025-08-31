@@ -6,9 +6,11 @@ import {
   TouchableOpacity, 
   PermissionsAndroid, 
   Platform, 
-  Alert 
+  Alert, 
+  StyleSheet
 } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
+import { commonStyles } from "../styles/common";
 
 const BLEScanner = () => {
   const [devices, setDevices] = useState<{ [id: string]: Device | any }>({
@@ -112,18 +114,13 @@ const BLEScanner = () => {
   };
 
   return (
-    <View style={{ flex: 1, padding: 20 }}>
+    <View style={styles.container}>
       <TouchableOpacity
-        style={{
-          backgroundColor: scanning ? "gray" : "blue",
-          padding: 12,
-          borderRadius: 8,
-          marginBottom: 10,
-        }}
+        style={[styles.scanButton, scanning && styles.scanButtonScanning]}
         onPress={startScan}
         disabled={scanning}
       >
-        <Text style={{ color: "white", textAlign: "center" }}>
+        <Text style={styles.scanButtonText}>
           {scanning ? "Scanning..." : "Start Scan"}
         </Text>
       </TouchableOpacity>
@@ -132,30 +129,23 @@ const BLEScanner = () => {
         data={Object.values(devices)}
         keyExtractor={(item: any) => item.id}
         renderItem={({ item }: any) => (
-          <View
-            style={{
-              padding: 10,
-              marginBottom: 5,
-              backgroundColor: "#f0f0f0",
-              borderRadius: 6,
-            }}
-          >
-            <Text style={{ fontWeight: "bold" }}>{item.name || "Unnamed Device"}</Text>
+          <View style={styles.deviceItem}>
+            <Text style={styles.deviceText}>{item.name || "Unnamed Device"}</Text>
             <Text>ID: {item.id}</Text>
             <Text>RSSI: {item.rssi}</Text>
 
             {connectedDevice?.id === item.id ? (
               <TouchableOpacity
-                style={{ backgroundColor: "red", padding: 8, borderRadius: 6, marginTop: 5 }}
+                style={styles.disconnectButton}
                 onPress={() => disconnectFromDevice(item, (success) => {
                   if (success) Alert.alert("Disconnected", `Disconnected from ${item.name}`);
                 })}
               >
-                <Text style={{ color: "white", textAlign: "center" }}>Disconnect</Text>
+                <Text style={styles.buttonText}>Disconnect</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={{ backgroundColor: "green", padding: 8, borderRadius: 6, marginTop: 5 }}
+                style={styles.connectButton}
                 onPress={() => connectToDevice(item, (success, dev) => {
                   if (success && dev) {
                     Alert.alert("Connected", `Connected to ${dev.name}`);
@@ -164,7 +154,7 @@ const BLEScanner = () => {
                   }
                 })}
               >
-                <Text style={{ color: "white", textAlign: "center" }}>Connect</Text>
+                <Text style={styles.buttonText}>Connect</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -173,5 +163,50 @@ const BLEScanner = () => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    ...commonStyles.container,
+    padding: 20,
+  },
+  scanButton: {
+    backgroundColor: "blue",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  scanButtonScanning: {
+    backgroundColor: "gray",
+  },
+  scanButtonText: {
+    color: "white",
+    textAlign: "center",
+  },
+  deviceItem: {
+    padding: 10,
+    marginBottom: 5,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 6,
+  },
+  deviceText: {
+    fontWeight: "bold",
+  },
+  connectButton: {
+    backgroundColor: "green",
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 5,
+  },
+  disconnectButton: {
+    backgroundColor: "red",
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 5,
+  },
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+  },
+});
 
 export default BLEScanner;

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { commonStyles } from "../styles/common";
 
 interface BleDevice {
   id: string;
@@ -87,6 +88,7 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false }) => {
 
 const styles = StyleSheet.create({
   container: {
+    ...commonStyles.row,
     marginVertical: 6,
     marginHorizontal: 4,
     borderRadius: 12,
@@ -96,8 +98,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
   },
   info: {
@@ -110,8 +110,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    ...commonStyles.row,
     flexWrap: "wrap",
   },
   subText: {

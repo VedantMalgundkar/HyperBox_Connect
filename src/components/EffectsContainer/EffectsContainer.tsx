@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 import { useLedApi } from '../../api/ledApi';
 import EffectsTile from './EffectsTile';
+import { commonStyles } from "../../styles/common";
 
 type Effect = {
     name: string;
@@ -83,7 +84,7 @@ export default function EffectTileContainer({ hasCleared }: EffectTileContainerP
 
 const styles = StyleSheet.create({
     container: {
-        flexDirection: "column",
+        ...commonStyles.column,
         gap: 17,
         paddingBottom: 10,
     },
