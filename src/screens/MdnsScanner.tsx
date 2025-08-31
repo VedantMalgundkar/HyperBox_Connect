@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, Button } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import Zeroconf from 'react-native-zeroconf';
 import HyperhdrDiscoveryTile, { HyperhdrDevice } from '../components/HyperhdrDiscoveryTile';
 import { useNavigation } from '@react-navigation/native';
@@ -17,10 +17,10 @@ type MdnsScannerNavigationProp = NativeStackNavigationProp<
 
 const zeroconf = new Zeroconf();
 
-export default function MdnsScanner() {
+export default function MdnsScanner({wantAppBar = true}) {
   const [services, setServices] = useState<Record<string, HyperhdrDevice>>({});
   const navigation = useNavigation<MdnsScannerNavigationProp>();
-  const { setBaseUrl } = useConnection();
+  const { setBaseUrl,ws } = useConnection();
 
   useEffect(() => {
     zeroconf.on('start', () => console.log('🔍 Scanning started'));
@@ -41,30 +41,48 @@ export default function MdnsScanner() {
   }, []);
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      title: "My Devices",
-      headerStyle: {
-        backgroundColor: "#6200ee",
-      },
-      headerTintColor: "#fff",
-      headerRight: () => (
-        <TouchableOpacity onPress={() => console.log('add pressed')}>
-          <MaterialDesignIcons name="plus" size={28} color="#fff" />
-        </TouchableOpacity>
-      ),
-    });
+    if(wantAppBar) {
+      navigation.setOptions({
+        title: "My Devices",
+        headerStyle: {
+          backgroundColor: "#6200ee",
+        },
+        headerTintColor: "#fff",
+        headerRight: () => (
+          <TouchableOpacity onPress={() => navigation.navigate('ModalTester')}>
+            <MaterialDesignIcons name="plus" size={28} color="#fff" />
+          </TouchableOpacity>
+        ),
+      });
+    } else {
+      navigation.setOptions({ headerShown: false })
+    }
   }, [navigation]);
 
   const handleHyperhdrDiscoveryTileClick = (url: string) => {
     setBaseUrl(url);
   } 
 
+  useEffect(() => {
+    if (!ws) return;
+
+    const handleOpen = () => {
+      navigation.replace('MainDashBoard');
+    };
+
+    ws.addEventListener("open", handleOpen);
+
+    return () => {
+      ws.removeEventListener("open", handleOpen);
+    };
+  }, [ws]);
+
   return (
     <View style={styles.container}>
-      <Button
+      {/* <Button
         title="Go to Dashboard"
         onPress={() => navigation.navigate('MainDashBoard')}
-      />
+      /> */}
       {/* <Text style={styles.title}>mDNS HyperHDR Scanner</Text> */}
       <FlatList
         data={Object.values(services)}

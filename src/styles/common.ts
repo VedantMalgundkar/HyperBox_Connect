@@ -33,3 +33,8 @@ export const commonStyles = StyleSheet.create({
     paddingBottom: 60,
   },
 });
+
+export const theme = {
+  primary: "#2196F3",
+  secondary: "#448AFF",
+};
