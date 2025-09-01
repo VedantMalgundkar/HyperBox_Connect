@@ -3,14 +3,18 @@ import BrightnessSlider from "../components/BrightnessSlider";
 import EffectTileContainer from "../components/EffectsContainer/EffectsContainer";
 import InputSourceDashBoard from "../components/InputSourceDashBoard";
 import { useState, useLayoutEffect } from "react";
-import { Button, SafeAreaView, ScrollView, TouchableOpacity, View, Text } from "react-native";
+import { Button, SafeAreaView, ScrollView, TouchableOpacity, View, Text, Dimensions } from "react-native";
 import CustomColorPicker from "../components/CustomColorPicker/CustomColorPicker";
 import { commonStyles } from "../styles/common";
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { MaterialIcons } from '@react-native-vector-icons/material-icons';
 import { theme } from '../styles/common';
+import Modal from "react-native-modal";
+import HyperhdrScannerContent from '../components/HyperhdrScannerContent';
 
 import { RootStackParamList } from '../navigation';
+
+const { height } = Dimensions.get("window");
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 
@@ -22,6 +26,13 @@ const MainDashBoard = ({ navigation }: Props) => {
     console.log("handleWifiIconClick >>>>");
   }
 
+  const openDrawer = () => {
+    setIsChangeDeviceDrawerOpen(true);
+  };
+  
+  const closeDrawer = () => {
+    setIsChangeDeviceDrawerOpen(false);
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -34,7 +45,7 @@ const MainDashBoard = ({ navigation }: Props) => {
           <View style={[commonStyles.row, {gap: 5}]}>
             {/* Change Device button */}
             <TouchableOpacity
-              onPress={() => setIsChangeDeviceDrawerOpen(prev => !prev)}
+              onPress={openDrawer}
               style={{
                 backgroundColor: "#fff",
                 paddingVertical: 4,
@@ -76,8 +87,35 @@ const MainDashBoard = ({ navigation }: Props) => {
 
   return (
     <SafeAreaView style={commonStyles.container}>
+      <View style={{ flex: 1 }}>
+        <Modal
+        isVisible={isChangeDeviceDrawerOpen}
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+        animationInTiming={300}
+        animationOutTiming={300}
+        useNativeDriver={true}
+        style={{ justifyContent: "flex-end", margin: 0 }}
+        onBackdropPress={closeDrawer}
+        onBackButtonPress={closeDrawer} 
+      >
+        <View
+          style={{
+            backgroundColor: "white",
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            height: height * 0.8,
+            padding: 20,
+          }}
+        >
+          <HyperhdrScannerContent onConnect={closeDrawer}/>
+        </View>
+      </Modal>
+      </View>
+
+
       <ScrollView contentContainerStyle={commonStyles.scrollContent}>
-        <Button title="Go Back" onPress={() => navigation.goBack()} />
+        <Button title="Go Back" onPress={() => openDrawer()} />
         <BrightnessSlider />
         <InputSourceDashBoard />
         <CustomColorPicker onColorClearOrChange={() => setHasCleared((prev) => !prev)} />

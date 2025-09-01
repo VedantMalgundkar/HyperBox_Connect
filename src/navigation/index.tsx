@@ -2,7 +2,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import MainDashBoard from '../screens/MainDashBoard';
 import MdnsScanner from '../screens/MdnsScanner';
-import ModalTester from '../screens/ModalTester';
 
 // Define all your routes here
 export type RootStackParamList = {
@@ -21,10 +20,6 @@ const AppNavigator = () => {
       <Stack.Screen
         name="MdnsScanner"
         component={MdnsScanner}
-      />
-      <Stack.Screen
-        name="ModalTester"
-        component={ModalTester}
       />
       <Stack.Screen
         name="MainDashBoard"
