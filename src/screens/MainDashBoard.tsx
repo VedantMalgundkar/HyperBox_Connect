@@ -11,6 +11,7 @@ import { MaterialIcons } from '@react-native-vector-icons/material-icons';
 import { theme } from '../styles/common';
 import Modal from "react-native-modal";
 import HyperhdrScannerContent from '../components/HyperhdrScannerContent';
+import CommonModal from '../components/CommonModal';
 
 import { RootStackParamList } from '../navigation';
 
@@ -44,21 +45,16 @@ const MainDashBoard = ({ navigation }: Props) => {
       headerRight: () => (
           <View style={[commonStyles.row, {gap: 5}]}>
             {/* Change Device button */}
-            <TouchableOpacity
-              onPress={openDrawer}
-              style={{
-                backgroundColor: "#fff",
-                paddingVertical: 4,
-                paddingHorizontal: 8,
-                borderRadius: 30,
-              }}
-            >
-              <View style={[commonStyles.row,{gap:4}]}>
-                <MaterialIcons name="sync-alt" size={14} color={theme.primary} />
-                <Text style={{ fontSize: 9, color: theme.primary }}>
-                  Change Device
-                </Text>
-              </View>
+            <TouchableOpacity onPress={openDrawer} style={[commonStyles.row,{
+              gap:4,
+              backgroundColor: "#fff",
+              paddingVertical: 4,
+              paddingHorizontal: 8,
+              borderRadius: 30,}]}>
+              <MaterialIcons name="sync-alt" size={14} color={theme.primary} />
+              <Text style={{ fontSize: 9, color: theme.primary }}>
+                Change Device
+              </Text>
             </TouchableOpacity>
 
             {/* Wifi Icon + SSID text below */}
@@ -88,29 +84,28 @@ const MainDashBoard = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={commonStyles.container}>
       <View style={{ flex: 1 }}>
-        <Modal
-        isVisible={isChangeDeviceDrawerOpen}
-        animationIn="slideInUp"
-        animationOut="slideOutDown"
-        animationInTiming={300}
-        animationOutTiming={300}
-        useNativeDriver={true}
-        style={{ justifyContent: "flex-end", margin: 0 }}
-        onBackdropPress={closeDrawer}
-        onBackButtonPress={closeDrawer} 
-      >
-        <View
-          style={{
-            backgroundColor: "white",
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            height: height * 0.8,
-            padding: 20,
-          }}
-        >
-          <HyperhdrScannerContent onConnect={closeDrawer}/>
-        </View>
-      </Modal>
+
+        <CommonModal
+          isVisible={isChangeDeviceDrawerOpen}
+          onClose={closeDrawer}
+          containerStyle={{
+              backgroundColor: "white",
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              maxHeight: height * 0.7,
+              padding: 20,
+            }
+          }
+          modalStyle={{ justifyContent: "flex-end", margin: 0 }}
+          animationIn="slideInUp"
+          animationOut="slideOutDown"
+          animationInTiming={300}
+          animationOutTiming={300}
+          useNativeDriver={true}
+          >
+            <HyperhdrScannerContent onConnect={closeDrawer}/>
+        </CommonModal>
+      
       </View>
 
 
