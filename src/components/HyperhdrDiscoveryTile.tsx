@@ -5,11 +5,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { useConnection } from "../api/ConnectionContext";
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
 import { commonStyles } from "../styles/common";
 import CommonModal from "./CommonModal";
+import { useSysApi } from "../api/sysApi";
 
 export interface HyperhdrDevice {
   name: string;
@@ -34,17 +36,37 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) => {
   let displayName = device.name.substring(device.name.lastIndexOf(" on ") + 4).trim();
   displayName = displayName.split("-")[0];
 
-  const [name, setName] = useState(displayName.trim() || "");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [tempName, setTempName] = useState(name);
+  const [tempName, setTempName] = useState(displayName.trim());
+  const [isLoading, setIsLoading] = useState(false);
 
   const { baseUrl } = useConnection();
   const customBackendUrl = `http://${device.host}:${device.port}`;
   const isSelected = customBackendUrl === baseUrl;
 
-  const handleSave = () => {
-    setName(tempName.trim());
+  const { setHostname } = useSysApi();
+
+  const closeEditModal = () => {
     setIsModalOpen(false);
+  }
+
+  const handleSave = async () => {
+    if (tempName.trim()) {
+      await updateHostName(tempName.trim());
+    }
+  };
+
+  const updateHostName = async (hostname: string) => {
+    setIsLoading(true);
+    try {
+      await setHostname(hostname);
+      // await new Promise((resolve) => setTimeout(resolve, 2000));
+    } catch (e) {
+      console.error("Failed to update hostname:", e);
+    } finally {
+      setIsLoading(false);
+      closeEditModal();
+    }
   };
 
   return (
@@ -52,7 +74,7 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) => {
       <View style={styles.tile}>
         <View>
           <Text style={styles.name} numberOfLines={1}>
-            {name}
+            {displayName.trim()}
           </Text>
           <Text style={styles.host} numberOfLines={1}>
             Host: {device.host}
@@ -87,7 +109,12 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) => {
 
       <CommonModal
         isVisible={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={()=>{
+          if(!isLoading){
+            console.log("isLoading >>>>",isLoading);
+            closeEditModal()
+          }
+        }}
         modalStyle={{ justifyContent: "space-around", margin: 30 }}
         containerStyle={{
           backgroundColor: "white",
@@ -115,16 +142,22 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) => {
           <View style={styles.modalActions}>
             <TouchableOpacity
               style={[styles.actionButton, styles.closeButton]}
-              onPress={() => setIsModalOpen(false)}
+              onPress={closeEditModal}
+              disabled={isLoading}
             >
               <Text style={styles.buttonText}>Close</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, styles.okButton]}
+              style={[styles.actionButton, styles.okButton, isLoading && { opacity: 0.7 }]}
               onPress={handleSave}
+              disabled={isLoading}
             >
-              <Text style={styles.buttonText}>OK</Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>OK</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>

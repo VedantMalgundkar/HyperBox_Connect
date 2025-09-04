@@ -32,8 +32,8 @@ export default function HyperhdrScannerContent({onConnect}: HyperhdrScannerConte
     zeroconf.on('found', (name) => console.log('✅ Found service:', name));
     zeroconf.on('resolved', (service: HyperhdrDevice) => {
       console.log('📡 Resolved service:', service);
-      setServices(prev => ({ ...prev, 
-        [service.name]: service,
+      setServices(prev => ({ ...prev,
+        ...(service?.host && {[service.host]: service})
        }));
     });
     zeroconf.on('error', err => console.error('❌ Error:', err));
