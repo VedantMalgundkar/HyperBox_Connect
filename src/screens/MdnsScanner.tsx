@@ -27,7 +27,7 @@ export default function MdnsScanner() {
       },
       headerTintColor: "#fff",
       headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.navigate('ModalTester')}>
+        <TouchableOpacity onPress={() => navigation.navigate('BleScanner')}>
           <MaterialDesignIcons name="plus" size={28} color="#fff" />
         </TouchableOpacity>
       ),

@@ -2,12 +2,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import MainDashBoard from '../screens/MainDashBoard';
 import MdnsScanner from '../screens/MdnsScanner';
+import BLEScanner from '../screens/BleScannerScreen';
 
 // Define all your routes here
 export type RootStackParamList = {
   MdnsScanner: undefined;
   MainDashBoard: undefined; // or { someParam: string } if you want to pass params
-  ModalTester:undefined;
+  BleScanner:undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,6 +25,10 @@ const AppNavigator = () => {
       <Stack.Screen
         name="MainDashBoard"
         component={MainDashBoard}
+      />
+      <Stack.Screen
+        name="BleScanner"
+        component={BLEScanner}
       />
     </Stack.Navigator>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useLayoutEffect } from "react";
 import { 
   View, 
   Text, 
@@ -11,6 +11,15 @@ import {
 } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import { commonStyles } from "../styles/common";
+import { RootStackParamList } from '../navigation';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import { BarcodeScanner } from "../components/BarcodeScanner";
+
+type BleScannerNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'BleScanner'
+>;
 
 const BLEScanner = () => {
   const [devices, setDevices] = useState<{ [id: string]: Device | any }>({
@@ -29,9 +38,12 @@ const BLEScanner = () => {
       solicitedServiceUUIDs: null,
     },
   });
+  
   const [scanning, setScanning] = useState(false);
   const [manager, setManager] = useState<BleManager | null>(null);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
+  const navigation = useNavigation<BleScannerNavigationProp>();
+  
 
   useEffect(() => {
     const bleManager = new BleManager();
@@ -51,6 +63,16 @@ const BLEScanner = () => {
       ]);
     }
   };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: "Scan Device",
+      headerStyle: {
+        backgroundColor: "#6200ee",
+      },
+      headerTintColor: "#fff",
+    });
+  }, [navigation]);
 
   const startScan = async () => {
     if (!manager) return;
@@ -115,6 +137,8 @@ const BLEScanner = () => {
 
   return (
     <View style={styles.container}>
+
+      <BarcodeScanner/>
       <TouchableOpacity
         style={[styles.scanButton, scanning && styles.scanButtonScanning]}
         onPress={startScan}
