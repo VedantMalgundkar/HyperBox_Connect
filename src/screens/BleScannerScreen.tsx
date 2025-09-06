@@ -14,7 +14,7 @@ import { commonStyles } from "../styles/common";
 import { RootStackParamList } from '../navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { BarcodeScanner } from "../components/BarcodeScanner";
+import QrScanner from "../components/QrScanner";
 
 type BleScannerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -138,7 +138,11 @@ const BLEScanner = () => {
   return (
     <View style={styles.container}>
 
-      <BarcodeScanner/>
+      <QrScanner onScanned={(value)=>{
+        console.log("qr scanned >>>",value);
+      }}/>
+
+      {/* <BarcodeScanner/> */}
       <TouchableOpacity
         style={[styles.scanButton, scanning && styles.scanButtonScanning]}
         onPress={startScan}
