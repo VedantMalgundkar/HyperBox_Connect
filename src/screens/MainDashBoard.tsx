@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import BrightnessSlider from "../components/BrightnessSlider";
 import EffectTileContainer from "../components/EffectsContainer/EffectsContainer";
 import InputSourceDashBoard from "../components/InputSourceDashBoard";
-import { useState, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button, SafeAreaView, ScrollView, TouchableOpacity, View, Text, Dimensions } from "react-native";
 import CustomColorPicker from "../components/CustomColorPicker/CustomColorPicker";
 import { commonStyles } from "../styles/common";
@@ -12,16 +12,16 @@ import { theme } from '../styles/common';
 import Modal from "react-native-modal";
 import HyperhdrScannerContent from '../components/HyperhdrScannerContent';
 import CommonModal from '../components/CommonModal';
+import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
 import { RootStackParamList } from '../navigation';
-
-const { height } = Dimensions.get("window");
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 
 const MainDashBoard = ({ navigation }: Props) => {
   const [hasCleared, setHasCleared] = useState<boolean>(false);
   const [isChangeDeviceDrawerOpen, setIsChangeDeviceDrawerOpen] = useState(false);
+  const [isDeviceNameUpdating, setDeviceNameUpdating] = useState(false);
 
   const handleWifiIconClick = () => {
     console.log("handleWifiIconClick >>>>");
@@ -30,54 +30,49 @@ const MainDashBoard = ({ navigation }: Props) => {
   const openDrawer = () => {
     setIsChangeDeviceDrawerOpen(true);
   };
-  
+
   const closeDrawer = () => {
-    setIsChangeDeviceDrawerOpen(false);
+    if (!isDeviceNameUpdating) {
+      setIsChangeDeviceDrawerOpen(false);
+    }
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     navigation.setOptions({
       title: "Light Studio",
-      headerStyle: {
-        backgroundColor: theme.primary,
-      },
+      headerStyle: { backgroundColor: theme.primary },
       headerTintColor: "#fff",
       headerRight: () => (
-          <View style={[commonStyles.row, {gap: 5}]}>
-            {/* Change Device button */}
-            <TouchableOpacity onPress={openDrawer} style={[commonStyles.row,{
-              gap:4,
+        <View style={[commonStyles.row, { gap: 5 }]}>
+          <View
+            onTouchEnd={openDrawer}
+            style={[commonStyles.row, {
+              gap: 4,
               backgroundColor: "#fff",
               paddingVertical: 4,
               paddingHorizontal: 8,
-              borderRadius: 30,}]}>
-              <MaterialIcons name="sync-alt" size={14} color={theme.primary} />
-              <Text style={{ fontSize: 9, color: theme.primary }}>
-                Change Device
-              </Text>
-            </TouchableOpacity>
-
-            {/* Wifi Icon + SSID text below */}
-            <View style={[commonStyles.column, commonStyles.center, { minWidth: 40 } ]}>
-              <TouchableOpacity onPress={handleWifiIconClick}>
-                <MaterialIcons name="wifi" size={20} color="#fff" />
-              </TouchableOpacity>
-              <Text
-                style={{
-                  fontSize: 8,
-                  color: "#fff",
-                  maxWidth: 40,
-                  textAlign: "center",
-                }}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                test wifi
-              </Text>
-            </View>
+              borderRadius: 30,
+            }]}
+          >
+            <MaterialIcons name="sync-alt" size={14} color={theme.primary} />
+            <Text style={{ fontSize: 9, color: theme.primary }}>Change Device</Text>
           </View>
-        ),
-      
+
+          {/* Wifi Icon + SSID */}
+          <View style={[commonStyles.column, commonStyles.center, { minWidth: 40 }]}>
+            <View onTouchEnd={handleWifiIconClick}>
+              <MaterialIcons name="wifi" size={20} color="#fff" />
+            </View>
+            <Text
+              style={{ fontSize: 8, color: "#fff", maxWidth: 40, textAlign: "center" }}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              test wifi
+            </Text>
+          </View>
+        </View>
+      ),
     });
   }, [navigation]);
 
@@ -89,12 +84,12 @@ const MainDashBoard = ({ navigation }: Props) => {
           isVisible={isChangeDeviceDrawerOpen}
           onClose={closeDrawer}
           containerStyle={{
-              backgroundColor: "white",
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              maxHeight: height * 0.7,
-              padding: 20,
-            }
+            backgroundColor: "white",
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            height: hp('50%'),
+            padding: 20,
+          }
           }
           modalStyle={{ justifyContent: "flex-end", margin: 0 }}
           animationIn="slideInUp"
@@ -102,15 +97,15 @@ const MainDashBoard = ({ navigation }: Props) => {
           animationInTiming={300}
           animationOutTiming={300}
           useNativeDriver={true}
-          >
-            <HyperhdrScannerContent onConnect={closeDrawer}/>
+        >
+          <HyperhdrScannerContent onConnect={closeDrawer} onDeviceNameUpdating={(loadingState) => setDeviceNameUpdating(loadingState)} />
         </CommonModal>
-      
+
       </View>
 
 
       <ScrollView contentContainerStyle={commonStyles.scrollContent}>
-        <Button title="Go Back" onPress={() => openDrawer()} />
+        {/* <Button title="Go Back" onPress={() => openDrawer()} /> */}
         <BrightnessSlider />
         <InputSourceDashBoard />
         <CustomColorPicker onColorClearOrChange={() => setHasCleared((prev) => !prev)} />

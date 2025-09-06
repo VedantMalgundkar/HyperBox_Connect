@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+import React, { useState, useEffect, useRef } from "react";
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
   StyleSheet,
-  ActivityIndicator,
+  ActivityIndicator
 } from "react-native";
 import { useConnection } from "../api/ConnectionContext";
-import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { commonStyles } from "../styles/common";
-import CommonModal from "./CommonModal";
 import { useSysApi } from "../api/sysApi";
+import { widthPercentageToDP as wp } from 'react-native-responsive-screen';
 
 export interface HyperhdrDevice {
   name: string;
@@ -26,29 +26,39 @@ export interface HyperhdrDevice {
   customBackendUrl?: string;
   hyperHdrUrl?: string;
 }
-
 interface Props {
   device: HyperhdrDevice;
   onConnect: (id: string) => void;
+  onEdit: (ref?: any) => void; 
+  onDeviceNameUpdating?: (loadingState: boolean) => void;
 }
 
-const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) => {
+const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect, onEdit, onDeviceNameUpdating }) =>  {
   let displayName = device.name.substring(device.name.lastIndexOf(" on ") + 4).trim();
   displayName = displayName.split("-")[0];
+  const inputRef = useRef<TextInput>(null);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [tempName, setTempName] = useState(displayName.trim());
+  const [tempName, setTempName] = useState(displayName.trim() || "");
+  const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const { baseUrl } = useConnection();
-  const customBackendUrl = `http://${device.host}:${device.port}`;
-  const isSelected = customBackendUrl === baseUrl;
+
+  const customBackendUrl =  `http://${device.host}:${device.port}`
+
+  const isSelected = customBackendUrl == baseUrl;
 
   const { setHostname } = useSysApi();
 
-  const closeEditModal = () => {
-    setIsModalOpen(false);
-  }
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      const timer = setTimeout(() => {
+        onEdit?.(inputRef.current);
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isEditing]);
 
   const handleSave = async () => {
     if (tempName.trim()) {
@@ -58,34 +68,68 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) => {
 
   const updateHostName = async (hostname: string) => {
     setIsLoading(true);
+    if(onDeviceNameUpdating){
+      onDeviceNameUpdating(true);
+    }
     try {
       await setHostname(hostname);
-      // await new Promise((resolve) => setTimeout(resolve, 2000));
+      // await new Promise((resolve) => setTimeout(resolve, 5000));
     } catch (e) {
       console.error("Failed to update hostname:", e);
     } finally {
       setIsLoading(false);
-      closeEditModal();
+      setIsEditing(false);
+      if(onDeviceNameUpdating){
+        onDeviceNameUpdating(false);
+      }
     }
   };
 
   return (
     <View style={[styles.container, commonStyles.card, isSelected && styles.selected]}>
       <View style={styles.tile}>
-        <View>
-          <Text style={styles.name} numberOfLines={1}>
-            {displayName.trim()}
-          </Text>
-          <Text style={styles.host} numberOfLines={1}>
-            Host: {device.host}
-          </Text>
-        </View>
+        {isEditing ? (
+          <TextInput
+            ref={inputRef}
+            value={tempName}
+            onChangeText={setTempName}
+            style={styles.input}
+            autoFocus
+            onSubmitEditing={() => setIsEditing(false)}
+          />
+        ) : (
+          <View>
+            <Text style={styles.name} numberOfLines={1}>
+              {tempName}
+            </Text>
+            <Text style={styles.host} numberOfLines={1}>
+              Host: {device.host}
+            </Text>
+          </View>
+        )}
 
         {isSelected ? (
           <View style={styles.actions}>
-            <TouchableOpacity onPress={() => setIsModalOpen(true)}>
-              <MaterialDesignIcons name="pencil" size={25} />
-            </TouchableOpacity>
+            {isEditing ? (
+              <>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#6200EE" style={{ marginRight: wp('1%') }} />
+                ) : (
+                  <TouchableOpacity onPress={handleSave}>
+                    <MaterialDesignIcons name="check" size={25} />
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity disabled={isLoading} onPress={() => setIsEditing(false)}>
+                  <MaterialDesignIcons name="close" size={25} />
+                </TouchableOpacity>
+              </>
+              
+            ) : (
+              <TouchableOpacity onPress={() => setIsEditing(true)}>
+                <MaterialDesignIcons name="pencil" size={25} />
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <TouchableOpacity
@@ -106,64 +150,6 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect }) => {
           <Text style={styles.badgeText}>Connected</Text>
         </View>
       )}
-
-      <CommonModal
-        isVisible={isModalOpen}
-        onClose={()=>{
-          if(!isLoading){
-            console.log("isLoading >>>>",isLoading);
-            closeEditModal()
-          }
-        }}
-        modalStyle={{ justifyContent: "space-around", margin: 30 }}
-        containerStyle={{
-          backgroundColor: "white",
-          borderRadius: 16,
-          padding: 15,
-        }
-        }
-        animationIn="slideInUp"
-        animationOut="slideOutDown"
-        animationInTiming={300}
-        animationOutTiming={300}
-        useNativeDriver={true}
-      >
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Edit Device Name</Text>
-
-          <TextInput
-            value={tempName}
-            onChangeText={setTempName}
-            style={styles.input}
-            placeholder="Enter new name"
-            autoFocus
-          />
-
-          <View style={styles.modalActions}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.closeButton]}
-              onPress={closeEditModal}
-              disabled={isLoading}
-            >
-              <Text style={styles.buttonText}>Close</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButton, styles.okButton, isLoading && { opacity: 0.7 }]}
-              onPress={handleSave}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>OK</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-      </CommonModal>
-
     </View>
   );
 };
@@ -173,8 +159,8 @@ const styles = StyleSheet.create({
     ...commonStyles.column,
     borderRadius: 12,
     position: "relative",
-    minHeight: 62,
-    justifyContent: "center",
+    minHeight:62,
+    justifyContent:"center",
   },
   selected: {
     borderWidth: 1,
@@ -190,18 +176,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   host: {
-    fontSize: 10,
+    fontSize:10,
   },
-  // input: {
-  //   borderBottomWidth: 1,
-  //   borderColor: "#aaa",
-  //   paddingVertical: 6,
-  //   fontSize: 16,
-  //   marginTop: 10,
-  // },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    borderBottomWidth: 1,
+    borderColor: "#aaa",
+    paddingVertical: 2,
+  },
   actions: {
     ...commonStyles.row,
     gap: 8,
+    paddingLeft: 8,
+  },
+  icon: {
+    fontSize: 18,
+    marginHorizontal: 6,
   },
   connectBtn: {
     backgroundColor: "#6200EE",
@@ -227,46 +218,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 8,
     fontWeight: "bold",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-  },
-  actionButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  closeButton: {
-    backgroundColor: "#ccc",
-  },
-  okButton: {
-    backgroundColor: "#6200EE",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
   },
 });
 

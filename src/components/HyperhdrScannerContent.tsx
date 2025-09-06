@@ -1,28 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, View } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, findNodeHandle, InteractionManager } from 'react-native';
 import Zeroconf from 'react-native-zeroconf';
 import HyperhdrDiscoveryTile, { HyperhdrDevice } from '../components/HyperhdrDiscoveryTile';
 import { useConnection } from '../api/ConnectionContext';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 
 const zeroconf = new Zeroconf();
 
 type HyperhdrScannerContentProps = {
   onConnect: () => void;
+  onDeviceNameUpdating?: (loadingState: boolean) => void;
 };
 
-export default function HyperhdrScannerContent({onConnect}: HyperhdrScannerContentProps) {
+export default function HyperhdrScannerContent({onConnect, onDeviceNameUpdating}: HyperhdrScannerContentProps) {
   const [services, setServices] = useState<Record<string, HyperhdrDevice>>({});
   const { setBaseUrl,ws } = useConnection();
+  const scrollRef = useRef<KeyboardAwareScrollView>(null);
 
   // useEffect(() => {
-  //   const fakeData: HyperhdrDevice[] = Array.from({ length: 20 }, (_, i) => ({
+  // // Fixed device
+  // const fixedDevice: HyperhdrDevice = {
+  //     name: "My Fixed Device",
+  //     fullName: "Always Present Device",
+  //     host: "192.168.0.100",
+  //     port: 19444,
+  //   };
+
+  //   // Generate random devices
+  //   const randomDevices: HyperhdrDevice[] = Array.from({ length: 19 }, (_, i) => ({
   //     name: `Device ${i + 1}`,
-  //     fullName: `Fake Device ${i + 1}`,
-  //     host: `192.168.0.${i + 1}`,
+  //     fullName: `Random Device ${i + 1}`,
+  //     host: `192.168.0.${Math.floor(Math.random() * 200) + 2}`, // random 2-201
   //     port: 19444,
   //   }));
 
-  //   fakeData.forEach((service) => {
+  //   // Merge fixed + random
+  //   const allDevices = [fixedDevice, ...randomDevices];
+
+  //   // Set all devices in state
+  //   allDevices.forEach((service) => {
   //     setServices((prev) => ({ ...prev, [service.name]: service }));
   //   });
   // }, []);
@@ -51,6 +67,17 @@ export default function HyperhdrScannerContent({onConnect}: HyperhdrScannerConte
     setBaseUrl(url);
   } 
 
+  const handleEditClick = (nodeRef?: any) => {
+    InteractionManager.runAfterInteractions(() => {
+      if (nodeRef && scrollRef.current) {
+        const node = findNodeHandle(nodeRef);
+        if (node) {
+          scrollRef.current.scrollToFocusedInput(node);
+        }
+      }
+    });
+  };  
+
   useEffect(() => {
     if (!ws) return;
 
@@ -66,16 +93,23 @@ export default function HyperhdrScannerContent({onConnect}: HyperhdrScannerConte
   }, [ws]);
 
   return (
-      <FlatList
-        data={Object.values(services)}
-        keyExtractor={(item) => item.name}
-        renderItem={({ item }) => (
-          <HyperhdrDiscoveryTile device={item} onConnect={handleHyperhdrDiscoveryTileClick}/>
-        )}
-        contentContainerStyle={{
-          paddingVertical:13,
-        }}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-      />
+      <KeyboardAwareScrollView
+        ref={scrollRef}
+        enableOnAndroid={true}
+        keyboardOpeningTime={0}
+        contentContainerStyle={{ paddingVertical: 13 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {Object.values(services).map((item) => (
+          <View key={item.name} style={{ marginBottom: 10 }}>
+            <HyperhdrDiscoveryTile
+              device={item}
+              onConnect={handleHyperhdrDiscoveryTileClick}
+              onEdit={handleEditClick}
+              onDeviceNameUpdating={onDeviceNameUpdating}
+            />
+          </View>
+        ))}
+      </KeyboardAwareScrollView>
   );
 }
