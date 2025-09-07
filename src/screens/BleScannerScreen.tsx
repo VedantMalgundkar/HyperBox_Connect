@@ -15,6 +15,8 @@ import { RootStackParamList } from '../navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import QrScanner from "../components/QrScanner";
+import { useConnection } from "../api/ConnectionContext";
+import { connectToDevice, disconnect } from "../services/bleService";
 
 type BleScannerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -38,21 +40,14 @@ const BLEScanner = () => {
       solicitedServiceUUIDs: null,
     },
   });
-  
+
+  const { 
+    bleManager, 
+    handleConnect,
+    handleDisconnect, 
+    bleDeviceId} = useConnection();
   const [scanning, setScanning] = useState(false);
-  const [manager, setManager] = useState<BleManager | null>(null);
-  const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
   const navigation = useNavigation<BleScannerNavigationProp>();
-  
-
-  useEffect(() => {
-    const bleManager = new BleManager();
-    setManager(bleManager);
-
-    return () => {
-      bleManager.destroy();
-    };
-  }, []);
 
   const requestPermissions = async () => {
     if (Platform.OS === "android") {
@@ -75,13 +70,13 @@ const BLEScanner = () => {
   }, [navigation]);
 
   const startScan = async () => {
-    if (!manager) return;
+    if (!bleManager) return;
 
     await requestPermissions();
     setDevices({});
     setScanning(true);
 
-    manager.startDeviceScan(null, null, (error, device) => {
+    bleManager.startDeviceScan(null, null, (error, device) => {
       if (error) {
         console.log("Scan error:", error);
         setScanning(false);
@@ -94,44 +89,37 @@ const BLEScanner = () => {
     });
 
     setTimeout(() => {
-      manager.stopDeviceScan();
+      bleManager.stopDeviceScan();
       setScanning(false);
     }, 10000);
   };
 
   // ✅ Connect method with callback
-  const connectToDevice = async (device: Device, callback?: (success: boolean, dev?: Device) => void) => {
-    if (!manager) return;
-
+  const connectBleDevice = async (device: Device) => {
+    if (!bleManager) return;
     try {
       console.log("Connecting to", device.name, device.id);
-      const connected = await manager.connectToDevice(device.id);
-      await connected.discoverAllServicesAndCharacteristics();
+      console.log("bleManager >>>>",bleManager);
+      const connectedDevice = await connectToDevice(bleManager, device.id);
+      console.log("connected to >>>>>",connectedDevice.id);
+      await connectedDevice.discoverAllServicesAndCharacteristics();
+      handleConnect(connectedDevice);
 
-      setConnectedDevice(connected);
-      console.log("Connected:", connected.name);
-
-      callback?.(true, connected);
     } catch (error) {
       console.error("Connection error:", error);
-      callback?.(false);
     }
   };
 
   // ✅ Disconnect method with callback
-  const disconnectFromDevice = async (device: Device, callback?: (success: boolean) => void) => {
-    if (!manager) return;
-
+  const disConnectBleDevice = async () => {
+    if (!bleManager) return;
     try {
-      await manager.cancelDeviceConnection(device.id);
-      if (connectedDevice?.id === device.id) {
-        setConnectedDevice(null);
+      if(bleDeviceId) {
+        disconnect(bleManager, bleDeviceId);
+        handleDisconnect();
       }
-      console.log("Disconnected:", device.name);
-      callback?.(true);
     } catch (error) {
       console.error("Disconnection error:", error);
-      callback?.(false);
     }
   };
 
@@ -162,25 +150,17 @@ const BLEScanner = () => {
             <Text>ID: {item.id}</Text>
             <Text>RSSI: {item.rssi}</Text>
 
-            {connectedDevice?.id === item.id ? (
+            {bleDeviceId === item.id ? (
               <TouchableOpacity
                 style={styles.disconnectButton}
-                onPress={() => disconnectFromDevice(item, (success) => {
-                  if (success) Alert.alert("Disconnected", `Disconnected from ${item.name}`);
-                })}
+                onPress={disConnectBleDevice}
               >
                 <Text style={styles.buttonText}>Disconnect</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={styles.connectButton}
-                onPress={() => connectToDevice(item, (success, dev) => {
-                  if (success && dev) {
-                    Alert.alert("Connected", `Connected to ${dev.name}`);
-                  } else {
-                    Alert.alert("Failed", "Could not connect");
-                  }
-                })}
+                onPress={() => connectBleDevice(item)}
               >
                 <Text style={styles.buttonText}>Connect</Text>
               </TouchableOpacity>

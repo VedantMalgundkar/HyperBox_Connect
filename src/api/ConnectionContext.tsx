@@ -1,7 +1,7 @@
 // src/api/ConnectionContext.tsx
-import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
+import React, { createContext, useContext, useMemo, useState, useEffect, useRef } from "react";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { BleManager } from "react-native-ble-plx";
+import { BleManager, Device } from "react-native-ble-plx";
 
 // Types
 type ConnectionContextType = {
@@ -27,8 +27,10 @@ type ConnectionContextType = {
 
   // BLE
   bleManager: BleManager;
+  bleConnectionRef: React.RefObject<Device | null>;
+  handleConnect: (device: Device) => void;
+  handleDisconnect: () => void;
   bleDeviceId: string | null;
-  setBleDevice: (id: string | null) => void;
 };
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
@@ -91,6 +93,14 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
 
     return instance;
   }, [baseUrl]);
+
+  const bleManager = useMemo(() => new BleManager(), []);
+
+  useEffect(() => {
+    return () => {
+      bleManager.destroy(); // release native resources
+    };
+  }, [bleManager]);
 
   // Generic request wrappers
   const request = async <T = any>(
@@ -160,7 +170,21 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
 
   // --- BLE ---
   const [bleDeviceId, setBleDeviceId] = useState<string | null>(null);
-  const bleManager = useMemo(() => new BleManager(), []);
+
+  // refs
+  // const bleManagerRef = useRef<BleManager>(new BleManager());
+  const bleConnectionRef = useRef<Device | null>(null);
+
+  const handleConnect = (device: Device) => {
+    bleConnectionRef.current = device;
+    setBleDeviceId(device.id);
+  };
+
+  const handleDisconnect = () => {
+      bleConnectionRef.current = null;
+      setBleDeviceId(null);
+    }
+  
 
   return (
     <ConnectionContext.Provider
@@ -173,8 +197,10 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
         ws,
         disconnectWS,
         bleManager,
+        bleConnectionRef,
+        handleConnect,
+        handleDisconnect,
         bleDeviceId,
-        setBleDevice: setBleDeviceId,
       }}
     >
       {children}

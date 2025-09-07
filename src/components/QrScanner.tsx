@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef, useEffect } from "react"
-import { StyleSheet, View, TouchableOpacity, Text } from "react-native"
+import { StyleSheet, View, TouchableOpacity, Vibration } from "react-native"
 import { useCameraDevice, useCodeScanner, useCameraPermission } from "react-native-vision-camera"
 import { Camera } from "react-native-vision-camera"
 import { CONTENT_SPACING, CONTROL_BUTTON_SIZE, SAFE_AREA_PADDING } from "./Constants"
@@ -19,31 +19,24 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
   const isFocused = useIsFocused()
   const isForeground = useIsForeground()
   const isActive = isFocused && isForeground
-  const previouslyScannedcode = useRef(null);
   const [torch, setTorch] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
 
   const onCodeScanned = useCallback(
     (codes: any[]) => {
       const value = codes[0]?.value
-      if (!value || previouslyScannedcode.current == value) return;
+      if (!value) return;
 
+      Vibration.vibrate(1000);
       onScanned(value)
-      previouslyScannedcode.current = value;
+      closeCamera()
     },
     [onScanned]
   )
 
   const closeCamera = ()=>{
     setShowCamera(false)
-    previouslyScannedcode.current = null;
   }
-
-  useEffect(()=>{
-    return ()=>{
-        previouslyScannedcode.current = null;
-    }
-  },[])
 
   const codeScanner = useCodeScanner({
     codeTypes: ["qr", "ean-13"],
