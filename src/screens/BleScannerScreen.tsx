@@ -123,6 +123,14 @@ const BLEScanner = () => {
     }
   };
 
+  useEffect(() => {
+    console.log("Page Ble mounted");
+
+    return () => {
+      console.log("Page Ble cleanup"); // runs only if Ble unmounts
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
 
@@ -160,7 +168,8 @@ const BLEScanner = () => {
             ) : (
               <TouchableOpacity
                 style={styles.connectButton}
-                onPress={() => connectBleDevice(item)}
+                // onPress={() => connectBleDevice(item)}
+                onPress={() => navigation.navigate('WifiScanner')}
               >
                 <Text style={styles.buttonText}>Connect</Text>
               </TouchableOpacity>

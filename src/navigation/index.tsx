@@ -4,6 +4,7 @@ import MainDashBoard from '../screens/MainDashBoard';
 import MdnsScanner from '../screens/MdnsScanner';
 import BLEScanner from '../screens/BleScannerScreen';
 import {CodeScannerPage} from '../screens/BarcodeScanner';
+import WifiScanner from '../screens/WifiScanner';
 
 // Define all your routes here
 export type RootStackParamList = {
@@ -11,6 +12,7 @@ export type RootStackParamList = {
   MainDashBoard: undefined; // or { someParam: string } if you want to pass params
   BleScanner:undefined;
   codeScanner:undefined;
+  WifiScanner:undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -35,6 +37,10 @@ const AppNavigator = () => {
       <Stack.Screen
         name="codeScanner"
         component={CodeScannerPage}
+      />
+      <Stack.Screen
+        name="WifiScanner"
+        component={WifiScanner}
       />
     </Stack.Navigator>
   );
