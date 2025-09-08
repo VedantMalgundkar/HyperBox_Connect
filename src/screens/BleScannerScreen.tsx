@@ -94,6 +94,16 @@ const BLEScanner = () => {
     }, 10000);
   };
 
+  const handleRedirect = () => {
+    if(bleDeviceId){
+      navigation.navigate('WifiScanner',{ deviceId: bleDeviceId });
+    }
+  }
+
+  useEffect(()=>{
+    handleRedirect();
+  },[bleDeviceId])
+
   // ✅ Connect method with callback
   const connectBleDevice = async (device: Device) => {
     if (!bleManager) return;
@@ -104,7 +114,6 @@ const BLEScanner = () => {
       console.log("connected to >>>>>",connectedDevice.id);
       await connectedDevice.discoverAllServicesAndCharacteristics();
       handleConnect(connectedDevice);
-
     } catch (error) {
       console.error("Connection error:", error);
     }
@@ -168,8 +177,7 @@ const BLEScanner = () => {
             ) : (
               <TouchableOpacity
                 style={styles.connectButton}
-                // onPress={() => connectBleDevice(item)}
-                onPress={() => navigation.navigate('WifiScanner')}
+                onPress={() => connectBleDevice(item)}
               >
                 <Text style={styles.buttonText}>Connect</Text>
               </TouchableOpacity>

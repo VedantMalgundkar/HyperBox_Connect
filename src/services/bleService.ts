@@ -2,6 +2,14 @@
 import { BleManager, Device, Characteristic } from "react-native-ble-plx";
 import { Buffer } from "buffer";
 
+export interface WifiNetwork {
+  s: string; // SSID
+  sr: number; // Signal strength
+  lck: number; // Locked
+  u: number; // Connected
+  sav: number; // Saved
+};
+
 // UUIDs from your Python BLE server
 const WIFI_SERVICE_UUID = "00000001-710e-4a5b-8d75-3e5b444bc3cf";
 const SCAN_CHAR_UUID = "00000003-710e-4a5b-8d75-3e5b444bc3cf";
@@ -39,7 +47,7 @@ export async function disconnect(bleManager: BleManager, connectedDeviceId: stri
 export async function discoverAndReadWifi(
   bleManager: BleManager,
   deviceId: string
-): Promise<Record<string, any>[]> {
+): Promise<WifiNetwork[]> {
   const device = await bleManager.discoverAllServicesAndCharacteristicsForDevice(
     deviceId
   );
@@ -74,7 +82,7 @@ async function readWifiList(
   bleManager: BleManager,
   deviceId: string,
   charUuid: string
-): Promise<Record<string, any>[]> {
+): Promise<WifiNetwork[]> {
   const characteristic = await bleManager.readCharacteristicForDevice(
     deviceId,
     WIFI_SERVICE_UUID,
@@ -116,27 +124,36 @@ export async function commonWifiActions(
   }
 
   const payload = JSON.stringify({ s: ssid, a: action });
-  const writePromise = bleManager.writeCharacteristicWithResponseForDevice(
-    deviceId,
-    WIFI_SERVICE_UUID,
-    WIFI_ACTION_CHAR_UUID,
-    encodeUtf8(payload)
-  );
 
-  return new Promise(async (resolve) => {
+  return new Promise(async (resolve, reject) => {
     let subscription: any;
 
     try {
+      // send request first
+      await bleManager.writeCharacteristicWithResponseForDevice(
+        deviceId,
+        WIFI_SERVICE_UUID,
+        WIFI_ACTION_CHAR_UUID,
+        encodeUtf8(payload)
+      );
+
       subscription = bleManager.monitorCharacteristicForDevice(
         deviceId,
         WIFI_SERVICE_UUID,
         STATUS_CHAR_UUID,
         (error, char) => {
           if (error) {
+            if (
+              error.errorCode === 2 || // Cancelled op
+              error.message?.includes("Cancelled")
+            ) {
+              return;
+            }
+
             console.error("Monitor error:", error);
-            resolve(JSON.stringify({ status: "failed", error: "monitor" }));
+            reject(error);
             subscription?.remove();
-            throw error;
+            return;
           }
 
           const decoded = decodeUtf8(char?.value ?? "");
@@ -154,19 +171,17 @@ export async function commonWifiActions(
         }
       );
 
-      await writePromise;
       console.log(`Wi-Fi ${action} request sent`);
     } catch (e) {
       console.error("Write failed:", e);
       subscription?.remove();
-      resolve(JSON.stringify({ status: "failed", error: "write_error" }));
-      throw e;
+      reject(e);
     }
 
     // Timeout safeguard
     setTimeout(() => {
       subscription?.remove();
-      resolve(JSON.stringify({ status: "failed", error: "timeout" }));
+      reject(new Error("Wi-Fi action timeout"));
     }, 15000);
   });
 }

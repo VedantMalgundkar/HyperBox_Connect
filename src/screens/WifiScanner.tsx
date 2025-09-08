@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { commonStyles } from "../styles/common";
 import { RootStackParamList } from "../navigation";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import WifiListWidget from "../components/WifiListWidget";
 
 type WifiScannerNavigationProp = NativeStackNavigationProp<
@@ -11,8 +11,13 @@ type WifiScannerNavigationProp = NativeStackNavigationProp<
   "WifiScanner"
 >;
 
+type WifiScannerRouteProp = RouteProp<RootStackParamList, "WifiScanner">;
+
 const WifiScanner = () => {
   const navigation = useNavigation<WifiScannerNavigationProp>();
+  const route = useRoute<WifiScannerRouteProp>();
+
+  const { deviceId } = route.params;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -26,7 +31,7 @@ const WifiScanner = () => {
 
   return (
     <View style={styles.container}>
-      <WifiListWidget deviceId="test" isFetchApi={false} />
+      <WifiListWidget deviceId={deviceId} isFetchApi={false} />
     </View>
   );
 };

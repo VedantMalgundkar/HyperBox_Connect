@@ -12,22 +12,21 @@ import {
 } from "react-native";
 import { MaterialIcons } from '@react-native-vector-icons/material-icons';
 import CommonModal from "./CommonModal";
-
-type WifiNetwork = {
-  s: string; // SSID
-  sr: number; // Signal strength
-  lck: number; // Locked
-  u: number; // Connected
-  sav: number; // Saved
-};
+import { discoverAndReadWifi, commonWifiActions } from "../services/bleService";
+import { WifiNetwork } from "../services/bleService";
+import { useConnection } from "../api/ConnectionContext";
 
 type Props = {
   deviceId: string;
   isFetchApi: boolean;
 };
 
+interface WifiNetworkWithId extends WifiNetwork {
+  id : string;
+}
+
 const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
-  const [wifiList, setWifiList] = useState<WifiNetwork[]>([]);
+  const [wifiList, setWifiList] = useState<WifiNetworkWithId[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [writeLoading, setWriteLoading] = useState(false);
@@ -38,6 +37,8 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
   const [password, setPassword] = useState("");
 
   const [menuForWifi, setMenuForWifi] = useState<WifiNetwork | null>();
+
+  const { bleManager } = useConnection();
 
   // Simulated BLE + API services
   const bleService = useRef<any>(null);
@@ -70,21 +71,23 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
         console.log("Fetching via API...");
       } else {
         console.log("Fetching via BLE...");
-        result = [
-          { s: "TP-Link_8CCC", sr: 77, lck: 1, u: 1, sav: 1 },
-          { s: "Airtel_123", sr: 65, lck: 1, u: 0, sav: 1 },
-          { s: "Jio_123", sr: 50, lck: 1, u: 0, sav: 1 },
-          { s: "Guest-WiFi", sr: 40, lck: 0, u: 0, sav: 0 },
-          { s: "Test wifi", sr: 40, lck: 0, u: 0, sav: 0 },
-          { s: "Test wifi12", sr: 60, lck: 1, u: 0, sav: 0 },
-        ];
+
+        result = await discoverAndReadWifi(bleManager, deviceId);
+
+        console.log("ble res >>>>",result);
       }
 
       // setConnectedWifi(result.filter((e) => e.u === 1));
       // setSavedWifi(result.filter((e) => e.sav === 1 && e.u !== 1));
       // setOtherWifi(result.filter((e) => e.sav === 0 && e.u !== 1));
 
-      setWifiList(result);
+      setWifiList(
+        result.map((wifi) => ({
+          ...wifi,
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        }))
+      );
+
     } catch (e) {
       console.error("Error loading Wi-Fi list:", e);
     } finally {
@@ -98,8 +101,33 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
     loadWifiList();
   }, [loadWifiList]);
 
-  const handleWifiAction = (ssid: string, action: "connect" | "disconnect" | "forget", pwd?: string) => {
-    Alert.alert(`Action`, `${action} ${ssid}${pwd ? ` with password ${pwd}` : ""}`);
+  const handleWifiAction = async (ssid: string, action: "connect" | "disconnect" | "forget") => {
+
+    let argAction: "add" | "sub" | "del";
+
+    switch (action) {
+      case "connect":
+        argAction = "add"
+        break;
+
+      case "disconnect":
+        argAction = "sub";
+        break;
+      
+      case "forget":
+        argAction = "del";
+        break;
+    }
+
+    if (!argAction) {
+      console.log("invalid arg action");
+      return;
+    }
+
+    const res = await commonWifiActions(bleManager,deviceId,ssid,argAction);
+
+    console.log("action resp >>>>",res);
+
     // TODO: Implement BLE or API action here
     loadWifiList();
   };
@@ -128,7 +156,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
     setMenuForWifi(null);
   }
 
-  const renderWifiTile = (wifi: WifiNetwork) => {
+  const renderWifiTile = (wifi: WifiNetworkWithId) => {
     const ssid = wifi.s ?? "Unknown SSID";
     const isConnected = wifi.u === 1;
     const isSaved = wifi.sav === 1;
@@ -136,7 +164,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
 
     return (
       <TouchableOpacity
-        key={ssid}
+        key={wifi.id}
         style={styles.tile}
         onPress={() => {
           if (isConnected) return;
@@ -180,25 +208,31 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={{ padding: 10 }}
       >
-        <View style={styles.section}>{connectedWifi.map(renderWifiTile)}</View>
+          {
+            connectedWifi.length > 0 && (
+              <View style={styles.section}>
+                {connectedWifi.map(renderWifiTile)}
+              </View>
+            )
+          }
 
-        <View style={styles.section}>
           {savedWifi.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Saved Networks</Text>
-              {savedWifi.map(renderWifiTile)}
+              <View style={styles.section}>
+                <Text style={styles.sectionHeader}>Saved Networks</Text>
+                {savedWifi.map(renderWifiTile)}
+              </View> 
             </>
           )}
-        </View>
 
-        <View style={[styles.section, styles.lastSection]}>
           {otherWifi.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Available Networks</Text>
-              {otherWifi.map(renderWifiTile)}
+              <View style={[styles.section, styles.lastSection]}>
+                <Text style={styles.sectionHeader}>Available Networks</Text>
+                {otherWifi.map(renderWifiTile)}
+              </View>
             </>
           )}
-        </View>
 
         {/* 🔑 Password Modal */}
         <CommonModal
@@ -229,7 +263,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
               style={[styles.actionBtn, { backgroundColor: "#6200ee" }]}
               onPress={() => {
                 if (selectedSsid) {
-                  handleWifiAction(selectedSsid, "connect", password);
+                  // handleWifiAction(selectedSsid, "connect", password);
                   resetStates();
                 }
               }}
@@ -328,7 +362,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     marginTop: 15,
-    marginBottom: 3,
+    marginBottom: 10,
     fontSize: 14,
     fontWeight: "500",
     color: "gray",
