@@ -15,6 +15,7 @@ import CommonModal from "./CommonModal";
 import { discoverAndReadWifi, sendWifiAction, writeCredentials, listenWifiStatus } from "../services/bleService";
 import { WifiNetwork } from "../services/bleService";
 import { useConnection } from "../api/ConnectionContext";
+import Toast from 'react-native-toast-message';
 
 type Props = {
   deviceId: string;
@@ -28,13 +29,13 @@ type Props = {
 // }
 
 interface bleResponse {
-  status: "connecting" | "success" | "failed";
-  message? : string;
-  error? : string;
+  status: "connecting" | "success" | "failed" | "forgetting";
+  message?: string;
+  error?: string;
 }
 
 interface WifiNetworkWithId extends WifiNetwork {
-  id : string;
+  id: string;
 }
 
 const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
@@ -72,8 +73,9 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
       }
     };
     init();
-    loadWifiList();
   }, []);
+
+
 
   const loadWifiList = useCallback(async () => {
     setLoading(true);
@@ -86,7 +88,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
 
         result = await discoverAndReadWifi(bleManager, deviceId);
 
-        console.log("ble res >>>>",result);
+        console.log("ble res >>>>", result);
       }
 
       // setConnectedWifi(result.filter((e) => e.u === 1));
@@ -125,7 +127,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
       case "disconnect":
         argAction = "sub";
         break;
-      
+
       case "forget":
         argAction = "del";
         break;
@@ -136,9 +138,9 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
       return;
     }
 
-    const res = await sendWifiAction(bleManager,deviceId,ssid,argAction);
+    const res = await sendWifiAction(bleManager, deviceId, ssid, argAction);
 
-    console.log("action resp >>>>",res);
+    console.log("action resp >>>>", res);
 
     // TODO: Implement BLE or API action here
     loadWifiList();
@@ -146,8 +148,8 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
 
   const handleWifiWriteCredentials = async (ssid: string, password: string) => {
     try {
-      console.log({ssid,password});
-      await writeCredentials(bleManager,deviceId,ssid,password);
+      console.log({ ssid, password });
+      await writeCredentials(bleManager, deviceId, ssid, password);
       resetStates();
     } catch (error) {
       console.error("Error writting Wi-Fi creds:", error);
@@ -224,14 +226,41 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
 
   const responseListener = () => {
     const handleRecievedData = (data: bleResponse) => {
-      console.log("data recieved from ble >>",data);
-    }
-    
+      console.log("data received from ble >>", data);
+
+      let toastType: "success" | "error" | "info";
+
+      switch (data.status) {
+        case "connecting":
+          toastType = "info";
+          break;
+
+        case "forgetting":
+          toastType = "info";
+          break;
+
+        default:
+          toastType = data.status as "success" | "error" | "info";
+          break;
+      }
+
+      Toast.show({
+        type: toastType, // success | error | info
+        text1: data.message ? data.message : data.error,
+        position: "bottom",
+        visibilityTime: 2000,
+      });
+
+      if (data.status === "success") {
+        loadWifiList();
+      }
+    };
+
     const handleError = (error: Error) => {
-      console.log("error recieved from ble >>",error);
+      console.log("error recieved from ble >>", error);
     }
 
-    const subs = listenWifiStatus(bleManager,deviceId,handleRecievedData,handleError);
+    const subs = listenWifiStatus(bleManager, deviceId, handleRecievedData, handleError);
 
     return subs
   }
@@ -245,7 +274,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
       subscription?.remove();
       console.log("BLE listener removed");
     };
-  }, [bleManager, deviceId]); 
+  }, [bleManager, deviceId]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -256,31 +285,31 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={{ padding: 10 }}
       >
-          {
-            connectedWifi.length > 0 && (
-              <View style={styles.section}>
-                {connectedWifi.map(renderWifiTile)}
-              </View>
-            )
-          }
+        {
+          connectedWifi.length > 0 && (
+            <View style={styles.section}>
+              {connectedWifi.map(renderWifiTile)}
+            </View>
+          )
+        }
 
-          {savedWifi.length > 0 && (
-            <>
-              <View style={styles.section}>
-                <Text style={styles.sectionHeader}>Saved Networks</Text>
-                {savedWifi.map(renderWifiTile)}
-              </View> 
-            </>
-          )}
+        {savedWifi.length > 0 && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>Saved Networks</Text>
+              {savedWifi.map(renderWifiTile)}
+            </View>
+          </>
+        )}
 
-          {otherWifi.length > 0 && (
-            <>
-              <View style={[styles.section, styles.lastSection]}>
-                <Text style={styles.sectionHeader}>Available Networks</Text>
-                {otherWifi.map(renderWifiTile)}
-              </View>
-            </>
-          )}
+        {otherWifi.length > 0 && (
+          <>
+            <View style={[styles.section, styles.lastSection]}>
+              <Text style={styles.sectionHeader}>Available Networks</Text>
+              {otherWifi.map(renderWifiTile)}
+            </View>
+          </>
+        )}
 
         {/* 🔑 Password Modal */}
         <CommonModal
@@ -311,7 +340,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
               style={[styles.actionBtn, { backgroundColor: "#6200ee" }]}
               onPress={() => {
                 if (selectedSsid) {
-                  handleWifiWriteCredentials(selectedSsid,password);
+                  handleWifiWriteCredentials(selectedSsid, password);
                 }
               }}
             >
