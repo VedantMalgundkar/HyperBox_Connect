@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from '@react-native-vector-icons/material-icons';
 import CommonModal from "./CommonModal";
-import { discoverAndReadWifi, commonWifiActions } from "../services/bleService";
+import { discoverAndReadWifi, sendWifiAction, writeCredentials, listenWifiStatus } from "../services/bleService";
 import { WifiNetwork } from "../services/bleService";
 import { useConnection } from "../api/ConnectionContext";
 
@@ -20,6 +20,18 @@ type Props = {
   deviceId: string;
   isFetchApi: boolean;
 };
+
+//       {
+//     "status": "success",
+//     "message": "Successfully connected to TP-Link_8CCC",
+//     "ip_addr": "192.168.0.121"
+// }
+
+interface bleResponse {
+  status: "connecting" | "success" | "failed";
+  message? : string;
+  error? : string;
+}
 
 interface WifiNetworkWithId extends WifiNetwork {
   id : string;
@@ -124,13 +136,24 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
       return;
     }
 
-    const res = await commonWifiActions(bleManager,deviceId,ssid,argAction);
+    const res = await sendWifiAction(bleManager,deviceId,ssid,argAction);
 
     console.log("action resp >>>>",res);
 
     // TODO: Implement BLE or API action here
     loadWifiList();
   };
+
+  const handleWifiWriteCredentials = async (ssid: string, password: string) => {
+    try {
+      console.log({ssid,password});
+      await writeCredentials(bleManager,deviceId,ssid,password);
+      resetStates();
+    } catch (error) {
+      console.error("Error writting Wi-Fi creds:", error);
+    }
+
+  }
 
   const showWifiMenu = (wifi: WifiNetwork) => {
     setMenuForWifi(wifi);
@@ -199,6 +222,31 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
     );
   };
 
+  const responseListener = () => {
+    const handleRecievedData = (data: bleResponse) => {
+      console.log("data recieved from ble >>",data);
+    }
+    
+    const handleError = (error: Error) => {
+      console.log("error recieved from ble >>",error);
+    }
+
+    const subs = listenWifiStatus(bleManager,deviceId,handleRecievedData,handleError);
+
+    return subs
+  }
+
+  useEffect(() => {
+    // Start listening
+    const subscription = responseListener();
+
+    // Cleanup on unmount
+    return () => {
+      subscription?.remove();
+      console.log("BLE listener removed");
+    };
+  }, [bleManager, deviceId]); 
+
   return (
     <View style={{ flex: 1 }}>
       {writeLoading && (
@@ -263,8 +311,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
               style={[styles.actionBtn, { backgroundColor: "#6200ee" }]}
               onPress={() => {
                 if (selectedSsid) {
-                  // handleWifiAction(selectedSsid, "connect", password);
-                  resetStates();
+                  handleWifiWriteCredentials(selectedSsid,password);
                 }
               }}
             >

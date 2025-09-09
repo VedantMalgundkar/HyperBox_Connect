@@ -1,5 +1,5 @@
 // bleService.ts
-import { BleManager, Device, Characteristic } from "react-native-ble-plx";
+import { BleManager, Device, Characteristic, Subscription } from "react-native-ble-plx";
 import { Buffer } from "buffer";
 
 export interface WifiNetwork {
@@ -113,77 +113,65 @@ export async function writeCredentials(
 }
 
 // ========== WiFi Actions ==========
-export async function commonWifiActions(
+export async function sendWifiAction(
   bleManager: BleManager,
   deviceId: string,
   ssid: string,
   action: "add" | "sub" | "del"
-): Promise<string> {
+): Promise<void> {
   if (!["add", "sub", "del"].includes(action)) {
     throw new Error(`Invalid action: ${action}`);
   }
 
   const payload = JSON.stringify({ s: ssid, a: action });
 
-  return new Promise(async (resolve, reject) => {
-    let subscription: any;
+  await bleManager.writeCharacteristicWithResponseForDevice(
+    deviceId,
+    WIFI_SERVICE_UUID,
+    WIFI_ACTION_CHAR_UUID,
+    encodeUtf8(payload)
+  );
 
-    try {
-      // send request first
-      await bleManager.writeCharacteristicWithResponseForDevice(
-        deviceId,
-        WIFI_SERVICE_UUID,
-        WIFI_ACTION_CHAR_UUID,
-        encodeUtf8(payload)
-      );
+  console.log(`Wi-Fi ${action} request sent`);
+}
 
-      subscription = bleManager.monitorCharacteristicForDevice(
-        deviceId,
-        WIFI_SERVICE_UUID,
-        STATUS_CHAR_UUID,
-        (error, char) => {
-          if (error) {
-            if (
-              error.errorCode === 2 || // Cancelled op
-              error.message?.includes("Cancelled")
-            ) {
-              return;
-            }
-
-            console.error("Monitor error:", error);
-            reject(error);
-            subscription?.remove();
-            return;
-          }
-
-          const decoded = decodeUtf8(char?.value ?? "");
-          console.log("Received WiFi status update:", decoded);
-
-          try {
-            const data = JSON.parse(decoded);
-            if (["success", "failed"].includes(data.status)) {
-              resolve(decoded);
-              subscription?.remove();
-            }
-          } catch {
-            console.error("Error decoding status JSON");
-          }
+export function listenWifiStatus(
+  bleManager: BleManager,
+  deviceId: string,
+  onUpdate: (data: any) => void,
+  onError?: (error: Error) => void
+): Subscription {
+  const subscription = bleManager.monitorCharacteristicForDevice(
+    deviceId,
+    WIFI_SERVICE_UUID,
+    STATUS_CHAR_UUID,
+    (error, char) => {
+      if (error) {
+        if (
+          error.errorCode === 2 || // Cancelled op
+          error.message?.includes("Cancelled")
+        ) {
+          return;
         }
-      );
 
-      console.log(`Wi-Fi ${action} request sent`);
-    } catch (e) {
-      console.error("Write failed:", e);
-      subscription?.remove();
-      reject(e);
+        console.error("Monitor error:", error);
+        onError?.(error);
+        return;
+      }
+
+      try {
+        const decoded = decodeUtf8(char?.value ?? "");
+        console.log("Received WiFi status update:", decoded);
+
+        const data = JSON.parse(decoded);
+        onUpdate(data);
+      } catch (e) {
+        console.error("Error decoding status JSON", e);
+      }
     }
+  );
 
-    // Timeout safeguard
-    setTimeout(() => {
-      subscription?.remove();
-      reject(new Error("Wi-Fi action timeout"));
-    }, 15000);
-  });
+  return subscription;
 }
 
 // ========== Read Helpers ==========
