@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatusBar, useColorScheme } from 'react-native';
+import { StatusBar, useColorScheme,View, Text, TouchableOpacity} from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -21,7 +21,7 @@ function App() {
           <NavigationContainer>
             <AppNavigator />
           </NavigationContainer>
-          <Toast />
+          <Toast config={toastConfig} />
         </ConnectionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -29,3 +29,32 @@ function App() {
 }
 
 export default App;
+
+const SnackbarToast = ({ text1, props }: any) => (
+  <View
+    style={{
+      backgroundColor: '#323232',
+      borderRadius: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      marginHorizontal: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    }}
+  >
+    <Text style={{ color: 'white', flex: 1 }}>{text1}</Text>
+
+    {props?.actionLabel && (
+      <TouchableOpacity onPress={props.onActionPress}>
+        <Text style={{ color: '#03DAC5', fontWeight: '600', marginLeft: 12 }}>
+          {props.actionLabel}
+        </Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
+
+const toastConfig = {
+  custom_snackbar: (props: any) => <SnackbarToast {...props} />,
+};
