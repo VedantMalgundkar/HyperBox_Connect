@@ -22,12 +22,6 @@ type Props = {
   isFetchApi: boolean;
 };
 
-//       {
-//     "status": "success",
-//     "message": "Successfully connected to TP-Link_8CCC",
-//     "ip_addr": "192.168.0.121"
-// }
-
 interface bleResponse {
   status: "connecting" | "success" | "failed" | "forgetting";
   message?: string;
@@ -73,6 +67,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
       }
     };
     init();
+    loadWifiList();
   }, []);
 
 
@@ -216,7 +211,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
           </View>
           {(isSaved || isConnected) && (
             <TouchableOpacity onPress={() => showWifiMenu(wifi)}>
-              <MaterialIcons name="more-vert" size={22} color="gray" />
+              <MaterialIcons name="more-vert" size={22} />
             </TouchableOpacity>
           )}
         </View>
@@ -228,27 +223,11 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
     const handleRecievedData = (data: bleResponse) => {
       console.log("data received from ble >>", data);
 
-      let toastType: "success" | "error" | "info";
-
-      switch (data.status) {
-        case "connecting":
-          toastType = "info";
-          break;
-
-        case "forgetting":
-          toastType = "info";
-          break;
-
-        default:
-          toastType = data.status as "success" | "error" | "info";
-          break;
-      }
-
       Toast.show({
-        type: toastType, // success | error | info
+        type: "custom_snackbar", // success | error | info
         text1: data.message ? data.message : data.error,
         position: "bottom",
-        visibilityTime: 2000,
+        visibilityTime: 3000,
       });
 
       if (data.status === "success") {

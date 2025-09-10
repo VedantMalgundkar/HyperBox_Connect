@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { 
   View, 
-  Text, 
+  Text,
+  TextInput,
   FlatList, 
-  TouchableOpacity, 
+  TouchableOpacity,
+  Button,
   PermissionsAndroid, 
   Platform, 
   Alert, 
@@ -17,6 +19,8 @@ import { useNavigation } from '@react-navigation/native';
 import QrScanner from "../components/QrScanner";
 import { useConnection } from "../api/ConnectionContext";
 import { connectToDevice, disconnect } from "../services/bleService";
+import { storeRecentDevice, getRecentDevices } from "../services/storage/regularStorage";
+import Toast from "react-native-toast-message";
 
 type BleScannerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -48,6 +52,10 @@ const BLEScanner = () => {
     bleDeviceId} = useConnection();
   const [scanning, setScanning] = useState(false);
   const navigation = useNavigation<BleScannerNavigationProp>();
+  const [deviceId, setDeviceId] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const recentConectedDevices = getRecentDevices();
 
   const requestPermissions = async () => {
     if (Platform.OS === "android") {
@@ -105,18 +113,63 @@ const BLEScanner = () => {
   },[bleDeviceId])
 
   // ✅ Connect method with callback
-  const connectBleDevice = async (device: Device) => {
-    if (!bleManager) return;
+  const connectBleDevice = async (deviceId: string) => {
+    if (!bleManager || !deviceId) return;
     try {
-      console.log("Connecting to", device.name, device.id);
-      console.log("bleManager >>>>",bleManager);
-      const connectedDevice = await connectToDevice(bleManager, device.id);
+      // console.log("Connecting to", deviceId);
+      // console.log("bleManager >>>>",bleManager);
+      const connectedDevice = await connectToDevice(bleManager, deviceId);
       console.log("connected to >>>>>",connectedDevice.id);
       await connectedDevice.discoverAllServicesAndCharacteristics();
       handleConnect(connectedDevice);
+      storeRecentDevice(connectedDevice);
     } catch (error) {
       console.error("Connection error:", error);
     }
+  };
+
+  const isMacEmpty = (mac: string) => {
+    return !mac.trim()
+  }
+
+  const isMacValid = (mac: string) => {
+    const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+    return macRegex.test(mac.trim())
+  }
+
+  const handleInputDeviceIdConnect = async (deviceId: string): Promise<boolean> => {
+
+    if (isConnecting) {
+      console.log("already connecting >>>>");
+      return false;
+    }
+    
+    setIsConnecting(true);
+    if (isMacEmpty(deviceId)) {
+      Toast.show({
+        type: "custom_snackbar",
+        text1: "Please enter a device ID",
+        position: "bottom",
+        visibilityTime: 3000,
+      });
+      setIsConnecting(false);
+      return false;
+    }
+
+    if (!isMacValid(deviceId)) {
+      Toast.show({
+        type: "custom_snackbar",
+        text1: "Expected format: AA:BB:CC:DD:EE:FF",
+        position: "bottom",
+        visibilityTime: 4000,
+      });
+      setIsConnecting(false);
+      return false;
+    }
+
+    await connectBleDevice(deviceId.trim());
+    setIsConnecting(false);
+    return true;
   };
 
   // ✅ Disconnect method with callback
@@ -136,15 +189,17 @@ const BLEScanner = () => {
     console.log("Page Ble mounted");
 
     return () => {
-      console.log("Page Ble cleanup"); // runs only if Ble unmounts
+      console.log("Page Ble cleanup");
+      disConnectBleDevice();
     };
   }, []);
 
   return (
     <View style={styles.container}>
 
-      <QrScanner onScanned={(value)=>{
+      <QrScanner onScanned={async (value)=>{
         console.log("qr scanned >>>",value);
+        return await handleInputDeviceIdConnect(value);
       }}/>
 
       {/* <BarcodeScanner/> */}
@@ -158,14 +213,23 @@ const BLEScanner = () => {
         </Text>
       </TouchableOpacity>
 
-      <FlatList
+      <TextInput
+        style={styles.input}
+        placeholder="Enter Device ID"
+        value={deviceId}
+        onChangeText={setDeviceId}
+        placeholderTextColor="#888"
+      />
+      <Button title="Connect" onPress={()=>handleInputDeviceIdConnect(deviceId)} />
+
+
+      {/* <FlatList
         data={Object.values(devices)}
         keyExtractor={(item: any) => item.id}
         renderItem={({ item }: any) => (
           <View style={styles.deviceItem}>
             <Text style={styles.deviceText}>{item.name || "Unnamed Device"}</Text>
             <Text>ID: {item.id}</Text>
-            <Text>RSSI: {item.rssi}</Text>
 
             {bleDeviceId === item.id ? (
               <TouchableOpacity
@@ -177,7 +241,33 @@ const BLEScanner = () => {
             ) : (
               <TouchableOpacity
                 style={styles.connectButton}
-                onPress={() => connectBleDevice(item)}
+                onPress={() => connectBleDevice(item.id)}
+              >
+                <Text style={styles.buttonText}>Connect</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      /> */}
+      <FlatList
+        data={recentConectedDevices}
+        keyExtractor={(item: any) => item.id}
+        renderItem={({ item }: any) => (
+          <View style={styles.deviceItem}>
+            <Text style={styles.deviceText}>{item.name || "Unnamed Device"}</Text>
+            <Text>ID: {item.id}</Text>
+
+            {bleDeviceId === item.id ? (
+              <TouchableOpacity
+                style={styles.disconnectButton}
+                onPress={disConnectBleDevice}
+              >
+                <Text style={styles.buttonText}>Disconnect</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.connectButton}
+                onPress={() => connectBleDevice(item.id)}
               >
                 <Text style={styles.buttonText}>Connect</Text>
               </TouchableOpacity>
@@ -193,6 +283,13 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.container,
     padding: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
   },
   scanButton: {
     backgroundColor: "blue",

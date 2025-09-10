@@ -10,8 +10,8 @@ import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-nat
 import QrIcon from "../icons/QrIcon"
 
 type Props = {
-  onScanned: (value: string) => void
-}
+  onScanned: (value: string) => Promise<boolean>;
+};
 
 export default function QrScanner({ onScanned }: Props): React.ReactElement {
   const { hasPermission, requestPermission } = useCameraPermission()
@@ -22,21 +22,27 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
   const [torch, setTorch] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
 
-  const onCodeScanned = useCallback(
-    (codes: any[]) => {
-      const value = codes[0]?.value
-      if (!value) return;
-
-      Vibration.vibrate(1000);
-      onScanned(value)
-      closeCamera()
-    },
-    [onScanned]
-  )
 
   const closeCamera = ()=>{
     setShowCamera(false)
   }
+
+  const onCodeScanned = useCallback(
+    async (codes: { value?: string }[]) => {
+      const value = codes[0]?.value;
+      if (!value) return;
+
+      Vibration.vibrate(1000);
+
+      // Wait for onScanned to finish and check result
+      const result = await onScanned(value);
+
+      if (result) {
+        closeCamera();
+      }
+    },
+    [onScanned]
+  );
 
   const codeScanner = useCodeScanner({
     codeTypes: ["qr", "ean-13"],
