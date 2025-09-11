@@ -1,12 +1,12 @@
-import React, { useLayoutEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import Zeroconf from 'react-native-zeroconf';
+import React from 'react';
+import { StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { commonStyles } from '../styles/common';
 import { RootStackParamList } from '../navigation';
-import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import HyperhdrScannerContent from '../components/HyperhdrScannerContent';
+
+// Paper components
+import { Appbar, useTheme, Surface } from 'react-native-paper';
 
 // ✅ Type the navigation hook
 type MdnsScannerNavigationProp = NativeStackNavigationProp<
@@ -14,43 +14,38 @@ type MdnsScannerNavigationProp = NativeStackNavigationProp<
   'MdnsScanner'
 >;
 
-const zeroconf = new Zeroconf();
-
 export default function MdnsScanner() {
   const navigation = useNavigation<MdnsScannerNavigationProp>();
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: "My Devices",
-      headerStyle: {
-        backgroundColor: "#6200ee",
-      },
-      headerTintColor: "#fff",
-      headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.navigate('BleScanner')}>
-          <MaterialDesignIcons name="plus" size={28} color="#fff" />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
+  const theme = useTheme(); // get current Paper theme (light/dark)
 
   const handleOpen = () => {
     navigation.replace('MainDashBoard');
   };
 
   return (
-    <View style={styles.container}>
-      {/* <Button
-        title="Go to Dashboard"
-        onPress={() => navigation.navigate('MainDashBoard')}
-      /> */}
-      {/* <Text style={styles.title}>mDNS HyperHDR Scanner</Text> */}
-      <HyperhdrScannerContent onConnect={handleOpen}/>
-    </View>
+    <Surface style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      {/* Paper Appbar */}
+      <Appbar.Header style={{ backgroundColor: theme.colors.surface }}>
+        <Appbar.Content
+          title="My Devices"
+          titleStyle={{ color: theme.colors.onPrimary }}
+        />
+        <Appbar.Action
+          icon="plus"
+          color={theme.colors.onPrimary} // icon color
+          onPress={() => navigation.navigate('BleScanner')}
+        />
+      </Appbar.Header>
+
+      {/* Content area */}
+      {/* <HyperhdrScannerContent onConnect={handleOpen} /> */}
+    </Surface>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { ...commonStyles.container, paddingHorizontal: 15, backgroundColor: '#fff' },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 15,
+  },
 });
