@@ -1,156 +1,153 @@
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet,
-  ActivityIndicator
-} from "react-native";
-import { useConnection } from "../api/ConnectionContext";
-import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
+import { View, StyleSheet } from "react-native";
+import {
+  Card,
+  Text,
+  TextInput,
+  IconButton,
+  Button,
+  ActivityIndicator,
+  Chip,
+} from "react-native-paper";
 import { commonStyles } from "../styles/common";
+import { useConnection } from "../api/ConnectionContext";
 import { useSysApi } from "../api/sysApi";
-import { widthPercentageToDP as wp } from 'react-native-responsive-screen';
 
 export interface HyperhdrDevice {
   name: string;
-  fullName?: string;
   host?: string;
-  addresses?: string[];
   port?: number;
-  txt?: Record<string, any>;
-  type?: string;
-  protocol?: string;
-  domain?: string;
   customBackendUrl?: string;
-  hyperHdrUrl?: string;
 }
+
 interface Props {
   device: HyperhdrDevice;
   onConnect: (id: string) => void;
-  onEdit: (ref?: any) => void; 
+  onEdit: (ref?: any) => void;
   onDeviceNameUpdating?: (loadingState: boolean) => void;
 }
 
-const HyperhdrDiscoveryTile: React.FC<Props> = ({ device, onConnect, onEdit, onDeviceNameUpdating }) =>  {
+const HyperhdrDiscoveryTile: React.FC<Props> = ({
+  device,
+  onConnect,
+  onEdit,
+  onDeviceNameUpdating,
+}) => {
   let displayName = device.name.substring(device.name.lastIndexOf(" on ") + 4).trim();
   displayName = displayName.split("-")[0];
-  const inputRef = useRef<TextInput>(null);
+
+  const inputRef = useRef<any>(null);
 
   const [tempName, setTempName] = useState(displayName.trim() || "");
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const { baseUrl } = useConnection();
-
-  const customBackendUrl =  `http://${device.host}:${device.port}`
-
-  const isSelected = customBackendUrl == baseUrl;
-
   const { setHostname } = useSysApi();
+
+  const customBackendUrl = `http://${device.host}:${device.port}`;
+  const isSelected = true//customBackendUrl === baseUrl;
+  const host = isEditing ? null : `Host : ${device?.host}`
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      const timer = setTimeout(() => {
-        onEdit?.(inputRef.current);
-      }, 50);
-
+      const timer = setTimeout(() => onEdit?.(inputRef.current), 50);
       return () => clearTimeout(timer);
     }
   }, [isEditing]);
 
   const handleSave = async () => {
     if (tempName.trim()) {
-      await updateHostName(tempName.trim());
-    }
-  };
-
-  const updateHostName = async (hostname: string) => {
-    setIsLoading(true);
-    if(onDeviceNameUpdating){
-      onDeviceNameUpdating(true);
-    }
-    try {
-      await setHostname(hostname);
-      // await new Promise((resolve) => setTimeout(resolve, 5000));
-    } catch (e) {
-      console.error("Failed to update hostname:", e);
-    } finally {
-      setIsLoading(false);
-      setIsEditing(false);
-      if(onDeviceNameUpdating){
-        onDeviceNameUpdating(false);
+      setIsLoading(true);
+      onDeviceNameUpdating?.(true);
+      try {
+        await setHostname(tempName.trim());
+      } catch (e) {
+        console.error("Failed to update hostname:", e);
+      } finally {
+        setIsLoading(false);
+        setIsEditing(false);
+        onDeviceNameUpdating?.(false);
       }
     }
   };
 
-  return (
-    <View style={[styles.container, commonStyles.card, isSelected && styles.selected]}>
-      <View style={styles.tile}>
-        {isEditing ? (
-          <TextInput
-            ref={inputRef}
-            value={tempName}
-            onChangeText={setTempName}
-            style={styles.input}
-            autoFocus
-            onSubmitEditing={() => setIsEditing(false)}
-          />
-        ) : (
-          <View>
-            <Text style={styles.name} numberOfLines={1}>
-              {tempName}
-            </Text>
-            <Text style={styles.host} numberOfLines={1}>
-              Host: {device.host}
-            </Text>
-          </View>
-        )}
+  const renderActions = (props?: any) => {
+    if (!isSelected) {
+      return (
+        <Button mode="contained" onPress={() => customBackendUrl && onConnect(customBackendUrl)}>
+          Connect
+        </Button>
+      );
+    }
 
-        {isSelected ? (
-          <View style={styles.actions}>
-            {isEditing ? (
-              <>
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#6200EE" style={{ marginRight: wp('1%') }} />
-                ) : (
-                  <TouchableOpacity onPress={handleSave}>
-                    <MaterialDesignIcons name="check" size={25} />
-                  </TouchableOpacity>
-                )}
+    if (!isEditing) {
+      return <IconButton icon="pencil" size={20} onPress={() => setIsEditing(true)} {...props} />;
+    }
 
-                <TouchableOpacity disabled={isLoading} onPress={() => setIsEditing(false)}>
-                  <MaterialDesignIcons name="close" size={25} />
-                </TouchableOpacity>
-              </>
-              
-            ) : (
-              <TouchableOpacity onPress={() => setIsEditing(true)}>
-                <MaterialDesignIcons name="pencil" size={25} />
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.connectBtn}
-            onPress={() => {
-              if (customBackendUrl) {
-                onConnect(customBackendUrl);
-              }
-            }}
-          >
-            <Text style={styles.connectText}>Connect</Text>
-          </TouchableOpacity>
-        )}
+    if (!isLoading) {
+      return (
+        <View style={styles.actions}>
+          <IconButton icon="check" size={20} onPress={handleSave} {...props} />
+          <IconButton icon="close" size={20} onPress={() => setIsEditing(false)} {...props} />
+        </View>
+      );
+    }
+
+    // Loading state
+    return (
+      <View style={styles.actions}>
+        <ActivityIndicator animating size="small" style={{ marginRight: 4 }} />
+        <IconButton
+          icon="close"
+          size={20}
+          onPress={() => setIsEditing(false)}
+          disabled={isLoading}
+          {...props}
+        />
       </View>
+    );
+  };
+
+  const renderTitle = () => {
+    if (isEditing) {
+      return (
+        <TextInput
+          ref={inputRef}
+          value={tempName}
+          onChangeText={setTempName}
+          mode="flat"
+          style={styles.input}
+          onSubmitEditing={() => setIsEditing(false)}
+        />
+      );
+    } else {
+      return tempName;
+    }
+  };
+
+  return (
+    <Card style={[styles.container, isSelected && { borderWidth: 1, borderColor: "#6200EE" }]}>
+      <Card.Title
+        title={renderTitle()}
+        subtitle={host}
+        titleStyle={{ backgroundColor: "green"}}
+        subtitleStyle={{backgroundColor:"red" }}
+        right={(props) => renderActions(props)}
+      />
 
       {isSelected && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Connected</Text>
-        </View>
+        <Chip
+          style={styles.chip}
+          compact
+          mode="flat"
+          textStyle={{ fontSize: 10 }}
+        >
+          Connected
+        </Chip>
       )}
-    </View>
+    </Card>
   );
 };
 
@@ -159,65 +156,24 @@ const styles = StyleSheet.create({
     ...commonStyles.column,
     borderRadius: 12,
     position: "relative",
-    minHeight:62,
-    justifyContent:"center",
-  },
-  selected: {
-    borderWidth: 1,
-    borderColor: "#6200EE",
-  },
-  tile: {
-    ...commonStyles.row,
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-  },
-  name: {
-    flex: 1,
-    fontSize: 16,
-  },
-  host: {
-    fontSize:10,
+    minHeight: 62,
+    justifyContent: "center",
+    marginVertical: 4,
   },
   input: {
-    flex: 1,
+    backgroundColor: "transparent",
+    width:"100%",
     fontSize: 16,
-    borderBottomWidth: 1,
-    borderColor: "#aaa",
-    paddingVertical: 2,
   },
   actions: {
-    ...commonStyles.row,
-    gap: 8,
-    paddingLeft: 8,
+    flexDirection: "row",
+    alignItems: "center",
   },
-  icon: {
-    fontSize: 18,
-    marginHorizontal: 6,
-  },
-  connectBtn: {
-    backgroundColor: "#6200EE",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  connectText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 12,
-  },
-  badge: {
+  chip: {
     position: "absolute",
-    top: -6,
+    top: -8,
     right: 12,
     backgroundColor: "#6200EE",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 8,
-    fontWeight: "bold",
   },
 });
 
