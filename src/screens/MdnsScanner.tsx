@@ -1,45 +1,49 @@
-import React from 'react';
-import { StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation';
-import HyperhdrScannerContent from '../components/HyperhdrScannerContent';
+import React, { useLayoutEffect } from "react";
+import { StyleSheet } from "react-native";
+import { useNavigation, useTheme as useNavTheme } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation";
+import HyperhdrScannerContent from "../components/HyperhdrScannerContent";
 
 // Paper components
-import { Appbar, useTheme, Surface } from 'react-native-paper';
+import { useTheme, Appbar } from "react-native-paper";
 
 // ✅ Type the navigation hook
 type MdnsScannerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'MdnsScanner'
+  "MdnsScanner"
 >;
 
 export default function MdnsScanner() {
   const navigation = useNavigation<MdnsScannerNavigationProp>();
-  const theme = useTheme(); // get current Paper theme (light/dark)
+  const theme = useTheme(); // Paper theme
 
   const handleOpen = () => {
-    navigation.replace('MainDashBoard');
+    navigation.replace("MainDashBoard");
   };
 
-  return (
-    <Surface style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      {/* Paper Appbar */}
-      <Appbar.Header style={{ backgroundColor: theme.colors.surface }}>
-        <Appbar.Content
-          title="My Devices"
-          titleStyle={{ color: theme.colors.onPrimary }}
-        />
-        <Appbar.Action
-          icon="plus"
-          color={theme.colors.onPrimary} // icon color
-          onPress={() => navigation.navigate('BleScanner')}
-        />
-      </Appbar.Header>
+  // 👇 Move header into setOptions
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      header: () => (
+        <Appbar.Header style={{ backgroundColor: theme.colors.primary }}>
+          <Appbar.Content
+            title="My Devices"
+            titleStyle={{ color: theme.colors.onPrimary }}
+          />
+          <Appbar.Action
+            icon="plus"
+            color={theme.colors.onPrimary}
+            onPress={() => navigation.navigate("BleScanner")}
+          />
+        </Appbar.Header>
+      ),
+    });
+  }, [navigation, theme]);
 
-      {/* Content area */}
-      {/* <HyperhdrScannerContent onConnect={handleOpen} /> */}
-    </Surface>
+  return (
+    // Content area
+    <HyperhdrScannerContent onConnect={handleOpen} />
   );
 }
 

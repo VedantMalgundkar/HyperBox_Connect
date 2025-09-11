@@ -1,46 +1,54 @@
-// App.tsx
 import React from "react";
 import { StatusBar, useColorScheme } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Provider as PaperProvider } from "react-native-paper";
-import { NavigationContainer, DefaultTheme as NavigationDefaultTheme, DarkTheme as NavigationDarkTheme } from "@react-navigation/native";
+import {
+  MD3LightTheme,
+  MD3DarkTheme,
+  PaperProvider,
+  adaptNavigationTheme,
+} from "react-native-paper";
+import {
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationDefaultTheme,
+  NavigationContainer,
+} from "@react-navigation/native";
+import merge from "deepmerge";
 
 import AppNavigator from "./src/navigation";
-import { lightTheme, darkTheme } from "./src/styles/theme"; // your MUI-style Paper themes
+import { lightTheme, darkTheme } from "./src/styles/theme";
 import { ConnectionProvider } from "./src/api/ConnectionContext";
 
-// ✅ Merge only colors for Navigation
-const navLightTheme = {
-  ...NavigationDefaultTheme,
-  colors: {
-    ...NavigationDefaultTheme.colors,
-    ...lightTheme.colors, // only colors
-  },
-};
+const { LightTheme: navLight, DarkTheme: navDark } = adaptNavigationTheme({
+  reactNavigationLight: NavigationDefaultTheme,
+  reactNavigationDark: NavigationDarkTheme,
+});
 
-const navDarkTheme = {
-  ...NavigationDarkTheme,
-  colors: {
-    ...NavigationDarkTheme.colors,
-    ...darkTheme.colors, // only colors
-  },
-};
+const CombinedLightTheme = merge(navLight, {
+  ...MD3LightTheme,
+  colors: lightTheme.colors,
+});
+
+const CombinedDarkTheme = merge(navDark, {
+  ...MD3DarkTheme,
+  colors: darkTheme.colors,
+});
 
 export default function App() {
   const isDarkMode = useColorScheme() === "dark";
-  const paperTheme = isDarkMode ? darkTheme : lightTheme;
-  const navTheme = isDarkMode ? navDarkTheme : navLightTheme;
+  const theme = isDarkMode ? CombinedDarkTheme : CombinedLightTheme;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+        <StatusBar
+          translucent={false}
+          backgroundColor={theme.colors.primary}  // 👈 match AppBar background
+          barStyle={isDarkMode ? "light-content" : "dark-content"}
+        />
         <ConnectionProvider>
-          {/* PaperProvider gets full MD3 theme */}
-          <PaperProvider theme={paperTheme}>
-            {/* NavigationContainer gets only colors */}
-            <NavigationContainer theme={navTheme}>
+          <PaperProvider theme={theme}>
+            <NavigationContainer theme={theme}>
               <AppNavigator />
             </NavigationContainer>
           </PaperProvider>
