@@ -12,6 +12,7 @@ import {
 import { commonStyles } from "../styles/common";
 import { useConnection } from "../api/ConnectionContext";
 import { useSysApi } from "../api/sysApi";
+import { useTheme } from "react-native-paper";
 
 export interface HyperhdrDevice {
   name: string;
@@ -44,9 +45,10 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
 
   const { baseUrl } = useConnection();
   const { setHostname } = useSysApi();
+  const theme = useTheme();
 
   const customBackendUrl = `http://${device.host}:${device.port}`;
-  const isSelected = true//customBackendUrl === baseUrl;
+  const isSelected = customBackendUrl === baseUrl;
   const host = isEditing ? null : `Host : ${device?.host}`
 
   useEffect(() => {
@@ -128,24 +130,47 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
   };
 
   return (
-    <Card style={[styles.container, isSelected && { borderWidth: 1, borderColor: "#6200EE" }]}>
-      <Card.Title
-        title={renderTitle()}
-        subtitle={host}
-        titleStyle={{ backgroundColor: "green"}}
-        subtitleStyle={{backgroundColor:"red" }}
-        right={(props) => renderActions(props)}
-      />
+    <Card
+      style={[
+        styles.container,
+        isSelected && { borderWidth: 1, borderColor: theme.colors.primary },
+      ]}
+    >
+      <View style={styles.row}>
+        {/* Left side: title + subtitle */}
+        <View style={styles.textContainer}>
+          {isEditing ? (
+            <TextInput
+              ref={inputRef}
+              value={tempName}
+              onChangeText={setTempName}
+              mode="flat"
+              style={styles.input}
+              onSubmitEditing={() => setIsEditing(false)}
+            />
+          ) : (
+            <>
+              <Text style={styles.title}>{tempName}</Text>
+              {host && <Text style={styles.subtitle}>{host}</Text>}
+            </>
+          )}
+        </View>
+
+        {/* Right side: actions */}
+        <View style={styles.actions}>{renderActions()}</View>
+      </View>
 
       {isSelected && (
-        <Chip
-          style={styles.chip}
-          compact
-          mode="flat"
-          textStyle={{ fontSize: 10 }}
+        <View
+          style={[
+            styles.chip,
+            { backgroundColor: theme.colors.primaryContainer },
+          ]}
         >
-          Connected
-        </Chip>
+          <Text style={{ color: theme.colors.onPrimaryContainer, fontSize: 9 }}>
+            Connected
+          </Text>
+        </View>
       )}
     </Card>
   );
@@ -160,10 +185,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginVertical: 4,
   },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 2, // control gap to subtitle
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#666",
+  },
   input: {
     backgroundColor: "transparent",
-    width:"100%",
     fontSize: 16,
+    width: "100%",
   },
   actions: {
     flexDirection: "row",
@@ -171,9 +214,10 @@ const styles = StyleSheet.create({
   },
   chip: {
     position: "absolute",
-    top: -8,
-    right: 12,
-    backgroundColor: "#6200EE",
+    top: -10,
+    right: 20,
+    padding: 5,
+    borderRadius: 6,
   },
 });
 
