@@ -47,11 +47,21 @@ export default function HyperhdrScannerContent({onConnect, onDeviceNameUpdating}
     zeroconf.on('start', () => console.log('🔍 Scanning started'));
     zeroconf.on('found', (name) => console.log('✅ Found service:', name));
     zeroconf.on('resolved', (service: HyperhdrDevice) => {
-      console.log('📡 Resolved service:', service);
-      setServices(prev => ({ ...prev,
-        ...(service?.host && {[service.host]: service})
-       }));
-    });
+    // Filter out IPv6 addresses (fe80::/10)
+    const ipv4Address = service.addresses?.find(addr => addr.includes('.')); // IPv4 contains '.'
+
+    if (!ipv4Address) {
+      console.log('Skipping IPv6-only service:', service);
+      return; // skip this service
+    }
+
+    console.log('📡 Resolved service (IPv4):', service);
+
+    setServices(prev => ({
+      ...prev,
+      [ipv4Address]: service, // use IPv4 as key
+    }));
+  });
     zeroconf.on('error', err => console.error('❌ Error:', err));
     zeroconf.on('stop', () => console.log('🛑 Scan stopped'));
 

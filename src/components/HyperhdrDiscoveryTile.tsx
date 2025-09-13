@@ -14,10 +14,12 @@ import { useTheme } from "react-native-paper";
 
 export interface HyperhdrDevice {
   name: string;
-  host?: string;
+  host?: string;                // primary host (IPv4/IPv6)
   port?: number;
   customBackendUrl?: string;
-  fullName?: string;
+  fullName?: string;            // e.g., "fe80::fa99:...._hyperhdr._tcp"
+  addresses?: string[];         // all addresses reported by Zeroconf
+  txt?: Record<string, any>;    // TXT record data
 }
 
 interface Props {
