@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { useLedApi } from '../api/ledApi';
-import { commonStyles } from '../styles/common';
+import { commonStyles, theme } from '../styles/common';
 import { useConnection } from "../api/ConnectionContext";
+
+import { useTheme } from 'react-native-paper';
 
 export interface Priority {
   active: boolean;
@@ -106,6 +108,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   const ledPositionRef = useRef<LedPositionData[] | null>(null);
   const { ws } = useConnection();
   const [loading, setLoading] = useState(false);
+  const theme = useTheme();
 
   const tiles: [InputTile, InputTile, InputTile] = [
     {
@@ -471,9 +474,9 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
             key={tile!.key}
             style={[
               styles.box,
+              {backgroundColor:theme.colors.surfaceVariant},
               commonStyles.center,
-              commonStyles.card,
-              isSelected && styles.boxSelected,
+              isSelected && {backgroundColor:theme.colors.primary},
               boxStyle,
             ]}
           >
@@ -486,7 +489,8 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
                       {
                         style: [
                           (tile!.icon.props as any).style,
-                          { color: isSelected ? "#fff" : "#0B0F14" },
+                          { color: isSelected ? theme.colors.onPrimary : theme.colors.onSurfaceVariant },
+                          // { color: theme.colors.onSurfaceVariant },
                         ],
                       }
                     )
@@ -497,7 +501,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
                 numberOfLines={1}
                 style={[
                   styles.label,
-                  { color: isSelected ? "#fff" : "#0B0F14" },
+                  { color: isSelected ? theme.colors.onPrimary : theme.colors.onSurfaceVariant },
                   labelStyle,
                 ]}
               >
@@ -533,6 +537,7 @@ const styles = StyleSheet.create({
     minHeight: 90,
     paddingVertical: 10,
     paddingHorizontal: 5,
+    ...commonStyles.bRadius,
   },
   boxSelected: {
     backgroundColor: "#007BFF",

@@ -1,14 +1,18 @@
 import Slider from '@react-native-community/slider';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { commonStyles } from '../styles/common';
 import Toast from 'react-native-toast-message';
 import { useLedApi } from '../api/ledApi';
+import { useTheme, Text } from 'react-native-paper';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
+
 
 const BrightnessSlider = () => {
     const {adjustLedBrightness, getLedBrightness} = useLedApi();
     
     const [brightness, setBrightness] = useState(50);
+    const theme = useTheme();
 
     const handleBrightnessChange = async (value: number): Promise<void> => {
         try {
@@ -42,7 +46,7 @@ const BrightnessSlider = () => {
     },[])
 
     return (
-        <View style={[styles.container, commonStyles.card]}>
+        <View style={[styles.container,{backgroundColor:theme.colors.surfaceVariant}]}>
             <View style={[styles.sliderRow, commonStyles.row]}>
                 <Slider
                     style={{ flex: 1, height: 40 }}
@@ -50,15 +54,15 @@ const BrightnessSlider = () => {
                     maximumValue={100}
                     step={1}
                     value={brightness}
-                    minimumTrackTintColor="#007BFF"
-                    maximumTrackTintColor="rgba(0,123,255,0.3)"
-                    thumbTintColor="#007BFF"
+                    minimumTrackTintColor={theme.colors.primary}
+                    maximumTrackTintColor={theme.colors.onSurface}
+                    thumbTintColor={theme.colors.primary}
                     onValueChange={(value) => setBrightness(value)}
                     onSlidingComplete={(value) => { handleBrightnessChange(value) }}
                 />
                 {/* Fixed-width tooltip */}
-                <View style={[styles.tooltip, commonStyles.center]}>
-                    <Text style={styles.tooltipText}>{brightness}</Text>
+                <View style={[styles.tooltip, commonStyles.center,{backgroundColor:theme.colors.primary}]}>
+                    <Text style={[styles.tooltipText, {color: theme.colors.onPrimary} ]}>{brightness}</Text>
                 </View>
             </View>
         </View>
@@ -72,6 +76,7 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         paddingBottom: 10,
         width: '100%',
+        ...commonStyles.bRadius,
     },
     sliderRow: {
         paddingRight: 10,

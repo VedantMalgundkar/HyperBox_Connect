@@ -68,6 +68,7 @@ export default function HyperhdrScannerContent({onConnect, onDeviceNameUpdating}
     zeroconf.scan('hyperhdr', 'tcp', 'local.');
 
     return () => {
+      console.log("hyper scanner cleanup ran >>");
       zeroconf.stop();
       zeroconf.removeAllListeners();
     };

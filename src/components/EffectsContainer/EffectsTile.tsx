@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from "react-native";
 import { commonStyles } from "../../styles/common";
+import { useTheme } from "react-native-paper";
 
 type EffectsTileProps = {
   title: string;
@@ -11,20 +12,22 @@ type EffectsTileProps = {
 
 
 export default function EffectsTile({ title, isActive, onPress, style }: EffectsTileProps) {
+  const theme = useTheme();
   return (
     <View style={style}>
       <TouchableOpacity
         onPress={onPress}
         style={[
           styles.tile,
-          commonStyles.card,
+          commonStyles.bRadius,
+          {backgroundColor: theme.colors.surfaceVariant},
           commonStyles.center,
           { padding:10 },
-          isActive && { borderColor: "#007BFF" },
+          isActive && { borderColor: theme.colors.primary, borderWidth: 1 },
         ]}
         activeOpacity={0.7}
       >
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, {color: theme.colors.onSurfaceVariant}]}>{title}</Text>
       </TouchableOpacity>
     </View>
   );

@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { commonStyles } from '../../styles/common';
 
 export const colorPickerStyle = StyleSheet.create({
   title: {
@@ -15,6 +16,7 @@ export const colorPickerStyle = StyleSheet.create({
     width: '100%',
     padding: 20,
     paddingBottom: 25,
+    ...commonStyles.bRadius,
   },
   panelStyle: {
     borderRadius: 16,

@@ -24,6 +24,7 @@ const CommonModal: React.FC<BottomSheetModalProps> = ({
       onBackdropPress={onClose}
       onBackButtonPress={onClose}
       style={[modalStyle]}
+      statusBarTranslucent={true}
       {...restProps} // 👈 consumer overrides (animation, timings, etc.)
     >
       <View

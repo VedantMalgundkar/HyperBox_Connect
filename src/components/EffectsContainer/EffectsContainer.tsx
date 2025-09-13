@@ -4,6 +4,7 @@ import Toast from "react-native-toast-message";
 import { useLedApi } from '../../api/ledApi';
 import EffectsTile from './EffectsTile';
 import { commonStyles } from "../../styles/common";
+import { useTheme } from "react-native-paper";
 
 type Effect = {
     name: string;
@@ -16,6 +17,7 @@ type EffectTileContainerProps = {
 export default function EffectTileContainer({ hasCleared }: EffectTileContainerProps) {
     const [effects, setEffects] = useState<Effect[] | null>(null);
     const [activeEffect, setActiveEffect] = useState<Effect | null>(null);
+    const theme = useTheme();
 
     const {applyEffect, getCurrentActiveInput, getLedEffects, stopEffect} = useLedApi();
 
@@ -68,7 +70,7 @@ export default function EffectTileContainer({ hasCleared }: EffectTileContainerP
 
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Classic Effects</Text>
+            <Text style={[styles.header, { color: theme.colors.onSurface }]}>Classic Effects</Text>
 
             {effects?.map((item: Effect) => (
                 <EffectsTile

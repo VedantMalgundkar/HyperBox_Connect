@@ -9,6 +9,7 @@ import { useLedApi } from '../../api/ledApi';
 import { colorPickerStyle } from './colorPickerStyle';
 import Divider from './Divider';
 import { commonStyles } from '../../styles/common';
+import { useTheme } from 'react-native-paper';
 
 type CustomColorPickerProps = {
   onColorClearOrChange: () => void;
@@ -23,6 +24,8 @@ export default function CustomColorPicker({ onColorClearOrChange }: CustomColorP
   const {applyColor, getCurrentActiveInput, stopEffect} = useLedApi();
 
   const currentColor = useSharedValue(customSwatches[0]);
+
+  const theme = useTheme();
 
   const rgbToHex = (rgb: number[]) =>
     `#${rgb.map(x => x.toString(16).padStart(2, '0')).join('')}`;
@@ -70,20 +73,27 @@ export default function CustomColorPicker({ onColorClearOrChange }: CustomColorP
 
   // runs on the js thread on color pick
   const onColorPick = async (color: ColorFormatsObject) => {
+    // guard against accidental taps (no actual change)
+    if (color.hex === resultColor) {
+      console.log("Ignoring tap, color unchanged:", color.hex);
+      return;
+    }
+
     console.log("ran onColorPick with >>>>>", color.rgb);
+
     // update local shared value
     currentColor.value = color.hex;
     setResultColor(color.hex);
 
     // convert "rgb(30, 176, 91)" → [30,176,91]
     const rgbArray = color.rgb
-      .replace(/[^\d,]/g, "") // keep only numbers & commas
+      .replace(/[^\d,]/g, "")
       .split(",")
       .map(num => parseInt(num.trim(), 10));
 
     console.log("RGB Array:", rgbArray);
-    callColorApi(rgbArray);
 
+    callColorApi(rgbArray);
   };
 
   const fetchCurrentInputSource = async () => {
@@ -108,7 +118,7 @@ export default function CustomColorPicker({ onColorClearOrChange }: CustomColorP
   const handleClearColor = async () => {
     try {
       await stopEffect(100);
-      setResultColor('#FFFFFF00');
+      setResultColor(customSwatches[0]);
       onColorClearOrChange();
     } catch (error: any) {
       Toast.show({ type: 'error', text1: error.message ?? "failed to reset Led color/Effect", position: 'bottom' });
@@ -127,7 +137,7 @@ export default function CustomColorPicker({ onColorClearOrChange }: CustomColorP
   }, []);
 
   return (
-      <View style={[colorPickerStyle.pickerContainer, commonStyles.card]}>
+      <View style={[colorPickerStyle.pickerContainer,{backgroundColor:theme.colors.surfaceVariant}]}>
         <ColorPicker
           value={resultColor}
           sliderThickness={20}
