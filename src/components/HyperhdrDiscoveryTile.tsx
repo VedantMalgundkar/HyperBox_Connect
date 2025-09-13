@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet } from "react-native";
 import {
-  Card,
   Text,
   TextInput,
   IconButton,
   Button,
   ActivityIndicator,
-  Chip,
 } from "react-native-paper";
 import { commonStyles } from "../styles/common";
 import { useConnection } from "../api/ConnectionContext";
@@ -19,19 +17,18 @@ export interface HyperhdrDevice {
   host?: string;
   port?: number;
   customBackendUrl?: string;
+  fullName?: string;
 }
 
 interface Props {
   device: HyperhdrDevice;
   onConnect: (id: string) => void;
-  onEdit: (ref?: any) => void;
   onDeviceNameUpdating?: (loadingState: boolean) => void;
 }
 
 const HyperhdrDiscoveryTile: React.FC<Props> = ({
   device,
   onConnect,
-  onEdit,
   onDeviceNameUpdating,
 }) => {
   let displayName = device.name.substring(device.name.lastIndexOf(" on ") + 4).trim();
@@ -50,14 +47,6 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
   const customBackendUrl = `http://${device.host}:${device.port}`;
   const isSelected = customBackendUrl === baseUrl;
   const host = isEditing ? null : `Host : ${device?.host}`
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      const timer = setTimeout(() => onEdit?.(inputRef.current), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isEditing]);
 
   const handleSave = async () => {
     if (tempName.trim()) {
@@ -78,9 +67,15 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
   const renderActions = (props?: any) => {
     if (!isSelected) {
       return (
-        <Button mode="contained" onPress={() => customBackendUrl && onConnect(customBackendUrl)}>
+        <Button 
+          mode="contained" 
+          style={[commonStyles.bRadius]}
+          compact={true}
+          onPress={() => customBackendUrl && onConnect(customBackendUrl)}
+          >
           Connect
         </Button>
+        
       );
     }
 
@@ -112,28 +107,11 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
     );
   };
 
-  const renderTitle = () => {
-    if (isEditing) {
-      return (
-        <TextInput
-          ref={inputRef}
-          value={tempName}
-          onChangeText={setTempName}
-          mode="flat"
-          style={styles.input}
-          onSubmitEditing={() => setIsEditing(false)}
-        />
-      );
-    } else {
-      return tempName;
-    }
-  };
-
   return (
-    <Card
+    <View
       style={[
         styles.container,
-        isSelected && { borderWidth: 1, borderColor: theme.colors.primary },
+        { borderColor: theme.colors.primary }
       ]}
     >
       <View style={styles.row}>
@@ -172,18 +150,18 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
           </Text>
         </View>
       )}
-    </Card>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     ...commonStyles.column,
-    borderRadius: 12,
+    ...commonStyles.bRadius,
     position: "relative",
-    minHeight: 62,
+    minHeight: 75,
     justifyContent: "center",
-    marginVertical: 4,
+    borderWidth: 1,
   },
   row: {
     flexDirection: "row",

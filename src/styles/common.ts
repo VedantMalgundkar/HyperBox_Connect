@@ -8,6 +8,9 @@ export const commonStyles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#fff',
   },
+  bRadius: {
+    borderRadius: 12,
+  },
   // For centering content
   center: {
     justifyContent: 'center',
