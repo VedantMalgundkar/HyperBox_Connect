@@ -21,6 +21,7 @@ import { useConnection } from "../api/ConnectionContext";
 import { connectToDevice, disconnect } from "../services/bleService";
 import { storeRecentDevice, getRecentDevices } from "../services/storage/regularStorage";
 import Toast from "react-native-toast-message";
+import { useTheme } from "react-native-paper";
 
 type BleScannerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -54,6 +55,7 @@ const BLEScanner = () => {
   const navigation = useNavigation<BleScannerNavigationProp>();
   const [deviceId, setDeviceId] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
+  const theme = useTheme();
 
   const recentConectedDevices = getRecentDevices();
 
@@ -70,10 +72,8 @@ const BLEScanner = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: "Scan Device",
-      headerStyle: {
-        backgroundColor: "#6200ee",
-      },
-      headerTintColor: "#fff",
+      headerStyle: { backgroundColor: theme.colors.primary },
+      headerTintColor: theme.colors.onPrimary,
     });
   }, [navigation]);
 
