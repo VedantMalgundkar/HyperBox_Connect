@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, findNodeHandle, InteractionManager } from 'react-native';
 import Zeroconf from 'react-native-zeroconf';
 import HyperhdrDiscoveryTile, { HyperhdrDevice } from '../components/HyperhdrDiscoveryTile';
 import { useConnection } from '../api/ConnectionContext';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
+import { useFocusEffect } from '@react-navigation/native';
 
 const zeroconf = new Zeroconf();
 
@@ -43,36 +44,28 @@ export default function HyperhdrScannerContent({onConnect, onDeviceNameUpdating}
   //   });
   // }, []);
 
-  useEffect(() => {
-    zeroconf.on('start', () => console.log('🔍 Scanning started'));
-    zeroconf.on('found', (name) => console.log('✅ Found service:', name));
-    zeroconf.on('resolved', (service: HyperhdrDevice) => {
-    // Filter out IPv6 addresses (fe80::/10)
-    const ipv4Address = service.addresses?.find(addr => addr.includes('.')); // IPv4 contains '.'
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🔍 Starting zeroconf scan");
+      zeroconf.on('start', () => console.log('Scanning started'));
+      zeroconf.on('found', (name) => console.log('✅ Found service:', name));
+      zeroconf.on('resolved', (service: HyperhdrDevice) => {
+        const ipv4Address = service.addresses?.find(addr => addr.includes('.'));
+        if (!ipv4Address) return;
+        setServices(prev => ({ ...prev, [ipv4Address]: service }));
+      });
+      zeroconf.on('error', err => console.error('❌ Error:', err));
 
-    if (!ipv4Address) {
-      console.log('Skipping IPv6-only service:', service);
-      return; // skip this service
-    }
+      zeroconf.scan('hyperhdr', 'tcp', 'local.');
 
-    console.log('📡 Resolved service (IPv4):', service);
-
-    setServices(prev => ({
-      ...prev,
-      [ipv4Address]: service, // use IPv4 as key
-    }));
-  });
-    zeroconf.on('error', err => console.error('❌ Error:', err));
-    zeroconf.on('stop', () => console.log('🛑 Scan stopped'));
-
-    zeroconf.scan('hyperhdr', 'tcp', 'local.');
-
-    return () => {
-      console.log("hyper scanner cleanup ran >>");
-      zeroconf.stop();
-      zeroconf.removeAllListeners();
-    };
-  }, []);
+      // cleanup runs when screen goes out of focus
+      return () => {
+        console.log("🛑 Stopping zeroconf scan");
+        zeroconf.stop();
+        zeroconf.removeAllListeners();
+      };
+    }, [])
+  );
 
   const handleHyperhdrDiscoveryTileClick = (url: string) => {
     setBaseUrl(url);
