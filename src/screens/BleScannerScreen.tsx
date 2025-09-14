@@ -26,7 +26,7 @@ import { useTheme, Button, TextInput } from "react-native-paper";
 import { handlePermissions } from "../utils/permissions";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view"
 import BleDeviceTile from "../components/BleDeviceTile";
-import {Appbar} from "react-native-paper";
+import { Appbar } from "react-native-paper";
 
 
 type BleScannerNavigationProp = NativeStackNavigationProp<
@@ -77,16 +77,16 @@ const BLEScanner = () => {
   //   },
   // });
 
-  const [devices, setDevices] = useState<{ [id: string]: any }>({})
+  // const [devices, setDevices] = useState<{ [id: string]: any }>({})
 
-  useEffect(() => {
-    const mockDevices: { [id: string]: any } = {}
-    for (let i = 0; i < 10; i++) {
-      const device = generateRandomDevice()
-      mockDevices[device.id] = device
-    }
-    setDevices(mockDevices)
-  }, [])
+  // useEffect(() => {
+  //   const mockDevices: { [id: string]: any } = {}
+  //   for (let i = 0; i < 10; i++) {
+  //     const device = generateRandomDevice()
+  //     mockDevices[device.id] = device
+  //   }
+  //   setDevices(mockDevices)
+  // }, [])
 
   const {
     bleManager,
@@ -174,7 +174,7 @@ const BLEScanner = () => {
         <Appbar.Header style={{ backgroundColor: theme.colors.primary }}>
           {/* Back button */}
           <Appbar.BackAction
-            onPress={() => navigation.goBack()} 
+            onPress={() => navigation.goBack()}
             color={theme.colors.onPrimary}
           />
 
@@ -299,16 +299,26 @@ const BLEScanner = () => {
 
   // ✅ Disconnect method with callback
   const disConnectBleDevice = async () => {
+    console.log("in disConnectBleDevice >>");
     if (!bleManager) return;
+    console.log("found bleManager >>>", bleManager);
+    console.log("ble deviceId >>>", bleDeviceId);
     try {
       if (bleDeviceId) {
-        disconnect(bleManager, bleDeviceId);
+        await disconnect(bleManager, bleDeviceId);
+        console.log("disconnected >>>");
         handleDisconnect();
       }
     } catch (error) {
       console.error("Disconnection error:", error);
     }
   };
+
+  useEffect(()=>{
+
+    console.log("updated bleDeviceId >>>>",bleDeviceId);
+
+  },[bleDeviceId])
 
   useEffect(() => {
     console.log("Page Ble mounted");
@@ -352,15 +362,19 @@ const BLEScanner = () => {
       </Button>
       {/* </View> */}
 
-      <Text style={[styles.recentDevicesTitle, {color:theme.colors.onSurface}]}>
-        Recently Connected Devices
-      </Text>
+      {
+        recentConectedDevices.length > 0 &&
+        <>
+          <Text style={[styles.recentDevicesTitle, { color: theme.colors.onSurface }]}>
+            Recently Connected Devices
+          </Text>
 
-      {Object.values(devices).map((item: any) => (
-        <BleDeviceTile key={item.id} device={item} disabled={false} />
-      ))}
+          {recentConectedDevices.map((item: any) => (
+            <BleDeviceTile key={item.id} device={item} disabled={false} onConnect={handleInputDeviceIdConnect} onDisconnect={disConnectBleDevice} />
+          ))}
+        </>
+      }
     </KeyboardAwareScrollView>
-
   );
 };
 

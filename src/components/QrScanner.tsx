@@ -10,6 +10,7 @@ import { useIsFocused } from "@react-navigation/core"
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen"
 import QrIcon from "../icons/QrIcon"
 import { showPermissionPopup } from "../utils/permissions"
+import { useTheme } from "react-native-paper"
 
 type Props = {
   onScanned: (value: string) => Promise<boolean>;
@@ -23,6 +24,7 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
   const isActive = isFocused && isForeground
   const [torch, setTorch] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
+  const theme = useTheme();
 
 
   const closeCamera = ()=>{
@@ -54,7 +56,7 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
   // Show only QR icon until clicked
   if (!showCamera) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+      <View style={[styles.container, { backgroundColor:theme.colors.surfaceVariant }, { justifyContent: "center", alignItems: "center" }]}>
         <TouchableOpacity
           onPress={async () => {
             if (!hasPermission) {
@@ -64,7 +66,7 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
           }}
         >
           {/* <QrIcon size={150} color="white" /> */}
-          <MaterialIcons name="qr-code-scanner" color="white" size={180} />
+          <MaterialIcons name="qr-code-scanner" color={theme.colors.onSurfaceVariant} size={180} />
         </TouchableOpacity>
       </View>
     )
@@ -126,8 +128,7 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
 const styles = StyleSheet.create({
   container: {
     height: hp("28%"),
-    width: wp("65%"),
-    backgroundColor: "grey",
+    width: wp("62%"),
   },
   button: {
     marginBottom: CONTENT_SPACING,

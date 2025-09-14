@@ -9,6 +9,7 @@ import {
 import { commonStyles } from "../styles/common";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { useTheme } from "react-native-paper";
+import { useConnection } from "../api/ConnectionContext";
 
 interface BleDevice {
   id: string;
@@ -19,21 +20,30 @@ interface BleDevice {
 interface Props {
   device: BleDevice;
   disabled?: boolean;
+  onConnect: (deviceId: string) => Promise<boolean>;
+  onDisconnect: (deviceId: string) => Promise<void>;
 }
 
-const BleDeviceTile: React.FC<Props> = ({ device, disabled = false }) => {
+const BleDeviceTile: React.FC<Props> = ({ device, disabled = false, onConnect, onDisconnect }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const theme = useTheme()
+  const { bleDeviceId } = useConnection();
+  
+  const isConnected = bleDeviceId == device.id;
+  const actionLabel = isConnected ? "Disconnect" : "Connect"
+  const deviceName = device.name.split("-")[0]
 
-  const handlePress = () => {
+
+  const handlePress = async () => {
     if (disabled) return;
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsConnected(!isConnected);
-      setIsLoading(false);
-    }, 1200); // fake delay
+    if(isConnected) {
+      await onDisconnect(device.id);
+    } else {
+      await onConnect(device.id);
+    }
+    setIsLoading(false);
   };
 
   return (
@@ -45,7 +55,7 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false }) => {
     >
       <View style={styles.info}>
         <Text style={[styles.title,{color: theme.colors.onSurfaceVariant}]}>
-          {device.name?.length > 0 ? device.name : "(No name)"}
+          {device.name?.length > 0 ? deviceName : "(No name)"}
           <Text style={styles.dot}> • </Text>
           <Text style={styles.subText}><MaterialDesignIcons name="bluetooth" color={theme.colors.onSurfaceVariant}/></Text>
         </Text>
@@ -57,26 +67,27 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false }) => {
       <TouchableOpacity
         style={[
           styles.button,
-          // isConnected ? {backgroundColor:theme.colors.primaryContainer} : {backgroundColor:theme.colors.primary},
           {backgroundColor:theme.colors.primary},
           (disabled || isLoading) && { opacity: 0.6 },
         ]}
         disabled={disabled || isLoading}
         onPress={handlePress}
       >
-        {isLoading ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Text
-            style={[
-              styles.btnText,
-              // isConnected ? { color: theme.colors.onPrimaryContainer } : { color: "#fff" },
-              { color: theme.colors.onPrimary }
-            ]}
-          >
-            {isConnected ? "Disconnect" : "Connect"}
-          </Text>
-        )}
+        {
+          isLoading && (
+            <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+          ) 
+        }
+        
+        <Text
+          style={[
+            styles.btnText,
+            { color: theme.colors.onPrimary }
+          ]}
+        >
+          {actionLabel}
+        </Text>
+
       </TouchableOpacity>
     </View>
   );
@@ -113,7 +124,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 16,
-    minWidth: 100,
+    flexDirection:"row",
+    gap: 5,
     alignItems: "center",
     justifyContent: "center",
   },

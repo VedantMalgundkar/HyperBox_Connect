@@ -39,6 +39,10 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isFetchApi }) => {
   const [writeLoading, setWriteLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const {bleDeviceId} = useConnection()
+
+  console.log("WifiListWidget bleDeviceId >>", bleDeviceId);
+
   // 🔑 For modal
   const [selectedSsid, setSelectedSsid] = useState<string | null>(null);
   const [password, setPassword] = useState("");
