@@ -1,17 +1,18 @@
 import React, { useEffect, useState, useLayoutEffect } from "react";
-import { 
-  View, 
+import {
+  View,
   Text,
-  TextInput,
-  FlatList, 
+  FlatList,
   TouchableOpacity,
-  Button,
-  PermissionsAndroid, 
-  Platform, 
-  Alert, 
-  StyleSheet
+  PermissionsAndroid,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
-import { BleManager, Device } from "react-native-ble-plx";
+import { Device } from "react-native-ble-plx";
 import { commonStyles } from "../styles/common";
 import { RootStackParamList } from '../navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,37 +22,79 @@ import { useConnection } from "../api/ConnectionContext";
 import { connectToDevice, disconnect } from "../services/bleService";
 import { storeRecentDevice, getRecentDevices } from "../services/storage/regularStorage";
 import Toast from "react-native-toast-message";
-import { useTheme } from "react-native-paper";
+import { useTheme, Button, TextInput } from "react-native-paper";
+import { handlePermissions } from "../utils/permissions";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view"
+import BleDeviceTile from "../components/BleDeviceTile";
+import {Appbar} from "react-native-paper";
+
 
 type BleScannerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'BleScanner'
 >;
 
-const BLEScanner = () => {
-  const [devices, setDevices] = useState<{ [id: string]: Device | any }>({
-    "DC:A6:32:6A:83:19": {
-      id: "DC:A6:32:6A:83:19",
-      name: "Test Device",
-      rssi: -42,
-      mtu: 23,
-      isConnectable: true,
-      manufacturerData: null,
-      serviceData: null,
-      overflowServiceUUIDs: null,
-      localName: "MockedDevice",
-      serviceUUIDs: ["1234"],
-      txPowerLevel: 4,
-      solicitedServiceUUIDs: null,
-    },
-  });
+// Helper to generate random MAC address
+const getRandomMac = () =>
+  Array.from({ length: 6 }, () =>
+    Math.floor(Math.random() * 256).toString(16).padStart(2, "0")
+  ).join(":").toUpperCase()
 
-  const { 
-    bleManager, 
+// Helper to generate random device
+const generateRandomDevice = () => {
+  const id = getRandomMac()
+  return {
+    id,
+    name: `Device-${Math.floor(Math.random() * 1000)}`,
+    rssi: -Math.floor(Math.random() * 100), // -0 to -99
+    mtu: 23 + Math.floor(Math.random() * 100),
+    isConnectable: Math.random() > 0.2,
+    manufacturerData: null,
+    serviceData: null,
+    overflowServiceUUIDs: null,
+    localName: `MockDevice-${Math.floor(Math.random() * 1000)}`,
+    serviceUUIDs: ["1234"],
+    txPowerLevel: Math.floor(Math.random() * 10),
+    solicitedServiceUUIDs: null,
+  }
+}
+
+const BLEScanner = () => {
+  // const [devices, setDevices] = useState<{ [id: string]: Device | any }>({
+  //   "DC:A6:32:6A:83:19": {
+  //     id: "DC:A6:32:6A:83:19",
+  //     name: "Test Device",
+  //     rssi: -42,
+  //     mtu: 23,
+  //     isConnectable: true,
+  //     manufacturerData: null,
+  //     serviceData: null,
+  //     overflowServiceUUIDs: null,
+  //     localName: "MockedDevice",
+  //     serviceUUIDs: ["1234"],
+  //     txPowerLevel: 4,
+  //     solicitedServiceUUIDs: null,
+  //   },
+  // });
+
+  const [devices, setDevices] = useState<{ [id: string]: any }>({})
+
+  useEffect(() => {
+    const mockDevices: { [id: string]: any } = {}
+    for (let i = 0; i < 10; i++) {
+      const device = generateRandomDevice()
+      mockDevices[device.id] = device
+    }
+    setDevices(mockDevices)
+  }, [])
+
+  const {
+    bleManager,
     handleConnect,
-    handleDisconnect, 
-    bleDeviceId} = useConnection();
-  const [scanning, setScanning] = useState(false);
+    handleDisconnect,
+    bleDeviceId } = useConnection();
+
+  // const [scanning, setScanning] = useState(false);
   const navigation = useNavigation<BleScannerNavigationProp>();
   const [deviceId, setDeviceId] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
@@ -59,58 +102,133 @@ const BLEScanner = () => {
 
   const recentConectedDevices = getRecentDevices();
 
-  const requestPermissions = async () => {
-    if (Platform.OS === "android") {
-      await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-      ]);
-    }
+  // const requestPermissions = async (
+  //   permissions: Permission[]
+  // ): Promise<"granted" | "denied" | "blocked"> => {
+
+  //   const result = await PermissionsAndroid.requestMultiple(permissions);
+  //   const values = Object.values(result);
+
+  //   if (values.every((v) => v === PermissionsAndroid.RESULTS.GRANTED)) {
+  //     return "granted";
+  //   }
+
+  //   if (values.some((v) => v === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN)) {
+  //     return "blocked"; // must go to settings
+  //   }
+
+  //   return "denied"; // denied, can ask again
+  // };
+
+  // const handlePermissions = async (permissions: Permission[]): Promise<boolean> => {
+  //   const status = await requestPermissions(permissions);
+
+  //   console.log({ status });
+
+  //   if (status === "granted") {
+  //     console.log("✅ All permissions granted");
+  //     return true;
+  //   } else if (status === "denied") {
+  //     console.log("❌ Permissions denied, can try again later");
+  //     return false;
+  //   } else if (status === "blocked") {
+  //     Alert.alert(
+  //       "Permission required",
+  //       "Please enable permissions in Settings.",
+  //       [
+  //         { text: "Cancel", style: "cancel" },
+  //         { text: "Open Settings", onPress: () => Linking.openSettings() },
+  //       ]
+  //     );
+  //     return false;
+  //   }
+
+  //   return false;
+  // };
+
+  const reqBluetooth = async () => {
+    const requiredPermissions = [
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+    ];
+
+    return await handlePermissions(requiredPermissions);
+  }
+
+  const reqCamera = async () => {
+    const requiredPermissions = [
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+    ];
+
+    return await handlePermissions(requiredPermissions);
   };
+
+  useEffect(() => {
+    reqBluetooth();
+  }, []);
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: "Scan Device",
-      headerStyle: { backgroundColor: theme.colors.primary },
-      headerTintColor: theme.colors.onPrimary,
+      header: () => (
+        <Appbar.Header style={{ backgroundColor: theme.colors.primary }}>
+          {/* Back button */}
+          <Appbar.BackAction
+            onPress={() => navigation.goBack()} 
+            color={theme.colors.onPrimary}
+          />
+
+          {/* Title */}
+          <Appbar.Content
+            title="Scan Device"
+            titleStyle={{ color: theme.colors.onPrimary }}
+          />
+        </Appbar.Header>
+      ),
     });
-  }, [navigation]);
+  }, [navigation, theme]);
 
-  const startScan = async () => {
-    if (!bleManager) return;
+  // const startScan = async () => {
+  //   console.log("scan started >>>>");
+  //   if (!bleManager) return;
 
-    await requestPermissions();
-    setDevices({});
-    setScanning(true);
+  //   const permRes = await reqBluetooth();
 
-    bleManager.startDeviceScan(null, null, (error, device) => {
-      if (error) {
-        console.log("Scan error:", error);
-        setScanning(false);
-        return;
-      }
+  //   if (!permRes) {
+  //     console.log("permission response >>",permRes);
+  //     return;
+  //   }
 
-      if (device && device.name) {
-        setDevices((prev) => ({ ...prev, [device.id]: device }));
-      }
-    });
+  //   setDevices({});
+  //   setScanning(true);
 
-    setTimeout(() => {
-      bleManager.stopDeviceScan();
-      setScanning(false);
-    }, 10000);
-  };
+  //   bleManager.startDeviceScan(null, null, (error, device) => {
+  //     if (error) {
+  //       console.log("Scan error:", error);
+  //       setScanning(false);
+  //       return;
+  //     }
+
+  //     if (device && device.name) {
+  //       setDevices((prev) => ({ ...prev, [device.id]: device }));
+  //     }
+  //   });
+
+  //   setTimeout(() => {
+  //     bleManager.stopDeviceScan();
+  //     setScanning(false);
+  //   }, 10000);
+  // };
 
   const handleRedirect = () => {
-    if(bleDeviceId){
-      navigation.navigate('WifiScanner',{ deviceId: bleDeviceId });
+    if (bleDeviceId) {
+      navigation.navigate('WifiScanner', { deviceId: bleDeviceId });
     }
   }
 
-  useEffect(()=>{
+  useEffect(() => {
     handleRedirect();
-  },[bleDeviceId])
+  }, [bleDeviceId])
 
   // ✅ Connect method with callback
   const connectBleDevice = async (deviceId: string) => {
@@ -119,7 +237,7 @@ const BLEScanner = () => {
       // console.log("Connecting to", deviceId);
       // console.log("bleManager >>>>",bleManager);
       const connectedDevice = await connectToDevice(bleManager, deviceId);
-      console.log("connected to >>>>>",connectedDevice.id);
+      console.log("connected to >>>>>", connectedDevice.id);
       await connectedDevice.discoverAllServicesAndCharacteristics();
       handleConnect(connectedDevice);
       storeRecentDevice(connectedDevice);
@@ -139,11 +257,18 @@ const BLEScanner = () => {
 
   const handleInputDeviceIdConnect = async (deviceId: string): Promise<boolean> => {
 
+    const permRes = await reqBluetooth();
+
+    if (!permRes) {
+      console.log("permission response >>", permRes);
+      return false;
+    }
+
     if (isConnecting) {
       console.log("already connecting >>>>");
       return false;
     }
-    
+
     setIsConnecting(true);
     if (isMacEmpty(deviceId)) {
       Toast.show({
@@ -176,7 +301,7 @@ const BLEScanner = () => {
   const disConnectBleDevice = async () => {
     if (!bleManager) return;
     try {
-      if(bleDeviceId) {
+      if (bleDeviceId) {
         disconnect(bleManager, bleDeviceId);
         handleDisconnect();
       }
@@ -195,94 +320,56 @@ const BLEScanner = () => {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      enableOnAndroid={true}
+      keyboardShouldPersistTaps="handled"
+      extraScrollHeight={20}
+    >
+      <View style={{ alignItems: "center" }}>
+        <QrScanner onScanned={async (value) => {
+          console.log("qr scanned >>>", value)
+          return await handleInputDeviceIdConnect(value)
+        }} />
+      </View>
 
-      <QrScanner onScanned={async (value)=>{
-        console.log("qr scanned >>>",value);
-        return await handleInputDeviceIdConnect(value);
-      }}/>
-
-      {/* <BarcodeScanner/> */}
-      <TouchableOpacity
-        style={[styles.scanButton, scanning && styles.scanButtonScanning]}
-        onPress={startScan}
-        disabled={scanning}
-      >
-        <Text style={styles.scanButtonText}>
-          {scanning ? "Scanning..." : "Start Scan"}
-        </Text>
-      </TouchableOpacity>
-
+      {/* <View style={{ gap: 12 }}> */}
       <TextInput
-        style={styles.input}
+        mode="outlined"
+        label="Device ID"
         placeholder="Enter Device ID"
         value={deviceId}
         onChangeText={setDeviceId}
-        placeholderTextColor="#888"
       />
-      <Button title="Connect" onPress={()=>handleInputDeviceIdConnect(deviceId)} />
 
+      <Button
+        mode="contained"
+        onPress={() => handleInputDeviceIdConnect(deviceId)}
+        loading={isConnecting}
+        disabled={isConnecting}
+      >
+        Connect
+      </Button>
+      {/* </View> */}
 
-      {/* <FlatList
-        data={Object.values(devices)}
-        keyExtractor={(item: any) => item.id}
-        renderItem={({ item }: any) => (
-          <View style={styles.deviceItem}>
-            <Text style={styles.deviceText}>{item.name || "Unnamed Device"}</Text>
-            <Text>ID: {item.id}</Text>
+      <Text style={[styles.recentDevicesTitle, {color:theme.colors.onSurface}]}>
+        Recently Connected Devices
+      </Text>
 
-            {bleDeviceId === item.id ? (
-              <TouchableOpacity
-                style={styles.disconnectButton}
-                onPress={disConnectBleDevice}
-              >
-                <Text style={styles.buttonText}>Disconnect</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.connectButton}
-                onPress={() => connectBleDevice(item.id)}
-              >
-                <Text style={styles.buttonText}>Connect</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      /> */}
-      <FlatList
-        data={recentConectedDevices}
-        keyExtractor={(item: any) => item.id}
-        renderItem={({ item }: any) => (
-          <View style={styles.deviceItem}>
-            <Text style={styles.deviceText}>{item.name || "Unnamed Device"}</Text>
-            <Text>ID: {item.id}</Text>
+      {Object.values(devices).map((item: any) => (
+        <BleDeviceTile key={item.id} device={item} disabled={false} />
+      ))}
+    </KeyboardAwareScrollView>
 
-            {bleDeviceId === item.id ? (
-              <TouchableOpacity
-                style={styles.disconnectButton}
-                onPress={disConnectBleDevice}
-              >
-                <Text style={styles.buttonText}>Disconnect</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.connectButton}
-                onPress={() => connectBleDevice(item.id)}
-              >
-                <Text style={styles.buttonText}>Connect</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      />
-    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    ...commonStyles.container,
     padding: 20,
+    flexDirection: "column",
+    gap: 20,
+    flexGrow: 1,
   },
   input: {
     borderWidth: 1,
@@ -291,18 +378,10 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
   },
-  scanButton: {
-    backgroundColor: "blue",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  scanButtonScanning: {
-    backgroundColor: "gray",
-  },
-  scanButtonText: {
-    color: "white",
-    textAlign: "center",
+  recentDevicesTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 8,
   },
   deviceItem: {
     padding: 10,

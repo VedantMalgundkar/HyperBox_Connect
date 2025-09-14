@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { commonStyles } from "../styles/common";
+import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
+import { useTheme } from "react-native-paper";
 
 interface BleDevice {
   id: string;
@@ -22,15 +24,7 @@ interface Props {
 const BleDeviceTile: React.FC<Props> = ({ device, disabled = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-
-  // normalize RSSI (-100..-30 => 0..100)
-  const normalizeRssi = (rssi: number) => {
-    const min = -100;
-    const max = -30;
-    if (rssi <= min) return 0;
-    if (rssi >= max) return 100;
-    return Math.round(((rssi - min) * 100) / (max - min));
-  };
+  const theme = useTheme()
 
   const handlePress = () => {
     if (disabled) return;
@@ -46,24 +40,25 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false }) => {
     <View
       style={[
         styles.container,
-        isConnected && { borderColor: "#90EE90", borderWidth: 2 },
+        { backgroundColor : theme.colors.surfaceVariant },
       ]}
     >
       <View style={styles.info}>
-        <Text style={styles.title}>
+        <Text style={[styles.title,{color: theme.colors.onSurfaceVariant}]}>
           {device.name?.length > 0 ? device.name : "(No name)"}
+          <Text style={styles.dot}> • </Text>
+          <Text style={styles.subText}><MaterialDesignIcons name="bluetooth" color={theme.colors.onSurfaceVariant}/></Text>
         </Text>
         <View style={styles.subtitleRow}>
-          <Text style={styles.subText}>{device.id}</Text>
-          <Text style={styles.dot}> • </Text>
-          <Text style={styles.subText}>RSSI: {normalizeRssi(device.rssi)}</Text>
+          <Text style={[styles.subText, {color :theme.colors.onSurfaceVariant} ]}>{device.id}</Text>
         </View>
       </View>
 
       <TouchableOpacity
         style={[
           styles.button,
-          isConnected ? styles.disconnectBtn : styles.connectBtn,
+          // isConnected ? {backgroundColor:theme.colors.primaryContainer} : {backgroundColor:theme.colors.primary},
+          {backgroundColor:theme.colors.primary},
           (disabled || isLoading) && { opacity: 0.6 },
         ]}
         disabled={disabled || isLoading}
@@ -75,7 +70,8 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false }) => {
           <Text
             style={[
               styles.btnText,
-              isConnected ? { color: "#B22222" } : { color: "#fff" },
+              // isConnected ? { color: theme.colors.onPrimaryContainer } : { color: "#fff" },
+              { color: theme.colors.onPrimary }
             ]}
           >
             {isConnected ? "Disconnect" : "Connect"}
@@ -89,14 +85,7 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false }) => {
 const styles = StyleSheet.create({
   container: {
     ...commonStyles.row,
-    marginVertical: 6,
-    marginHorizontal: 4,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...commonStyles.bRadius,
     padding: 12,
     justifyContent: "space-between",
   },
@@ -115,11 +104,9 @@ const styles = StyleSheet.create({
   },
   subText: {
     fontSize: 12,
-    color: "#555",
   },
   dot: {
     fontSize: 12,
-    color: "#555",
     marginHorizontal: 4,
   },
   button: {
@@ -138,7 +125,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     fontWeight: "bold",
-    fontSize: 14,
+    fontSize: 12,
   },
 });
 

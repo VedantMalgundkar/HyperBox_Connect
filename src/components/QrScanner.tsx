@@ -1,13 +1,15 @@
 import { useCallback, useState, useRef, useEffect } from "react"
-import { StyleSheet, View, TouchableOpacity, Vibration } from "react-native"
+import { StyleSheet, View, TouchableOpacity, Vibration, Linking } from "react-native"
 import { useCameraDevice, useCodeScanner, useCameraPermission } from "react-native-vision-camera"
 import { Camera } from "react-native-vision-camera"
 import { CONTENT_SPACING, CONTROL_BUTTON_SIZE, SAFE_AREA_PADDING } from "./Constants"
 import { useIsForeground } from "../hooks/useIsForeground"
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons"
+import { MaterialIcons } from '@react-native-vector-icons/material-icons';
 import { useIsFocused } from "@react-navigation/core"
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen"
 import QrIcon from "../icons/QrIcon"
+import { showPermissionPopup } from "../utils/permissions"
 
 type Props = {
   onScanned: (value: string) => Promise<boolean>;
@@ -61,7 +63,35 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
             setShowCamera(true)
           }}
         >
-          <QrIcon size={150} color="white" />
+          {/* <QrIcon size={150} color="white" /> */}
+          <MaterialIcons name="qr-code-scanner" color="white" size={180} />
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
+  // If permission denied → show fallback UI
+  if (!hasPermission) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <TouchableOpacity
+          onPress={async () => {
+            console.log("ran cam off >>>")
+            const granted = await requestPermission()
+            if (granted) {
+              setShowCamera(true)
+            } else {
+              // show popup instead of opening settings directly
+              showPermissionPopup(
+                "Permission required",
+                "Please enable camera permission in Settings.",
+                () => Linking.openSettings(),
+                "Open Settings"
+              )
+            }
+          }}
+        >
+          <MaterialDesignIcons name="camera-off" color="white" size={50} />
         </TouchableOpacity>
       </View>
     )
