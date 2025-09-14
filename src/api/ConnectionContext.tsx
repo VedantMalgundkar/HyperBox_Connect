@@ -27,10 +27,9 @@ type ConnectionContextType = {
 
   // BLE
   bleManager: BleManager;
-  bleConnectionRef: React.RefObject<Device | null>;
   handleConnect: (device: Device) => void;
   handleDisconnect: () => void;
-  bleDeviceId: string | null;
+  bleDevice: Device | null;
 };
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
@@ -169,20 +168,20 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   // --- BLE ---
-  const [bleDeviceId, setBleDeviceId] = useState<string | null>(null);
+  const [bleDevice, setBleDevice] = useState<Device | null>(null);
 
   // refs
   // const bleManagerRef = useRef<BleManager>(new BleManager());
-  const bleConnectionRef = useRef<Device | null>(null);
+  // const bleConnectionRef = useRef<Device | null>(null);
 
   const handleConnect = (device: Device) => {
-    bleConnectionRef.current = device;
-    setBleDeviceId(device.id);
+    // bleConnectionRef.current = device;
+    setBleDevice(device);
   };
 
   const handleDisconnect = () => {
-      bleConnectionRef.current = null;
-      setBleDeviceId(null);
+      // bleConnectionRef.current = null;
+      setBleDevice(null);
     }
   
 
@@ -197,10 +196,9 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
         ws,
         disconnectWS,
         bleManager,
-        bleConnectionRef,
         handleConnect,
         handleDisconnect,
-        bleDeviceId,
+        bleDevice,
       }}
     >
       {children}

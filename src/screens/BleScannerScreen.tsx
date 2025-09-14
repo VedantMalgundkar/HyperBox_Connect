@@ -92,7 +92,7 @@ const BLEScanner = () => {
     bleManager,
     handleConnect,
     handleDisconnect,
-    bleDeviceId } = useConnection();
+    bleDevice } = useConnection();
 
   // const [scanning, setScanning] = useState(false);
   const navigation = useNavigation<BleScannerNavigationProp>();
@@ -221,14 +221,14 @@ const BLEScanner = () => {
   // };
 
   const handleRedirect = () => {
-    if (bleDeviceId) {
-      navigation.navigate('WifiScanner', { deviceId: bleDeviceId });
+    if (bleDevice?.id) {
+      navigation.navigate('WifiScanner', { deviceId: bleDevice.id });
     }
   }
 
   useEffect(() => {
     handleRedirect();
-  }, [bleDeviceId])
+  }, [bleDevice?.id])
 
   // ✅ Connect method with callback
   const connectBleDevice = async (deviceId: string) => {
@@ -298,13 +298,13 @@ const BLEScanner = () => {
   };
 
   // ✅ Disconnect method with callback
-  const disConnectBleDevice = async () => {
+  const disConnectBleDevice = async (bleDeviceId: string) => {
     console.log("in disConnectBleDevice >>");
     if (!bleManager) return;
     console.log("found bleManager >>>", bleManager);
     console.log("ble deviceId >>>", bleDeviceId);
     try {
-      if (bleDeviceId) {
+      if (bleDevice?.id) {
         await disconnect(bleManager, bleDeviceId);
         console.log("disconnected >>>");
         handleDisconnect();
@@ -314,20 +314,16 @@ const BLEScanner = () => {
     }
   };
 
-  useEffect(()=>{
-
-    console.log("updated bleDeviceId >>>>",bleDeviceId);
-
-  },[bleDeviceId])
-
   useEffect(() => {
     console.log("Page Ble mounted");
 
     return () => {
-      console.log("Page Ble cleanup");
-      disConnectBleDevice();
+      console.log("Page Ble cleanup >>>>",bleDevice?.id);
+      if(bleDevice?.id){
+        disConnectBleDevice(bleDevice.id);
+      }
     };
-  }, []);
+  }, [bleDevice?.id]);
 
   return (
     <KeyboardAwareScrollView
@@ -370,7 +366,7 @@ const BLEScanner = () => {
           </Text>
 
           {recentConectedDevices.map((item: any) => (
-            <BleDeviceTile key={item.id} device={item} disabled={false} onConnect={handleInputDeviceIdConnect} onDisconnect={disConnectBleDevice} />
+            <BleDeviceTile key={item.id} device={item} disabled={false} onConnect={handleInputDeviceIdConnect} onRedirectAfterConnect={handleRedirect} />
           ))}
         </>
       }

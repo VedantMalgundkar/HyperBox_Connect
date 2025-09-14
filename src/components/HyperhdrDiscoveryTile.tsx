@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import {
   Text,
   TextInput,
@@ -69,15 +69,31 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
   const renderActions = (props?: any) => {
     if (!isSelected) {
       return (
-        <Button 
-          mode="contained" 
-          style={[commonStyles.bRadius]}
-          compact={true}
+        <TouchableOpacity
+          style={[
+            styles.button,
+            {backgroundColor:theme.colors.primary},
+            (isLoading) && { opacity: 0.6 },
+          ]}
+          disabled={isLoading}
           onPress={() => customBackendUrl && onConnect(customBackendUrl)}
+        >
+          {
+            isLoading && (
+              <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+            ) 
+          }
+          
+          <Text
+            style={[
+              styles.btnText,
+              { color: theme.colors.onPrimary }
+            ]}
           >
-          Connect
-        </Button>
-        
+            Connect
+          </Text>
+  
+        </TouchableOpacity>
       );
     }
 
@@ -113,7 +129,9 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
     <View
       style={[
         styles.container,
-        { borderColor: theme.colors.primary }
+        !isSelected && { padding: 5 },
+        isSelected && { borderColor: theme.colors.primary, borderWidth: 1 },
+        { backgroundColor: theme.colors.surfaceVariant }
       ]}
     >
       <View style={styles.row}>
@@ -130,7 +148,7 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
             />
           ) : (
             <>
-              <Text style={styles.title}>{tempName}</Text>
+              <Text style={[styles.title, {color:theme.colors.onSurfaceVariant}]}>{tempName}</Text>
               {host && <Text style={styles.subtitle}>{host}</Text>}
             </>
           )}
@@ -144,10 +162,10 @@ const HyperhdrDiscoveryTile: React.FC<Props> = ({
         <View
           style={[
             styles.chip,
-            { backgroundColor: theme.colors.primaryContainer },
+            { backgroundColor: theme.colors.primary },
           ]}
         >
-          <Text style={{ color: theme.colors.onPrimaryContainer, fontSize: 9 }}>
+          <Text style={{ color: theme.colors.onPrimary, fontSize: 9 }}>
             Connected
           </Text>
         </View>
@@ -161,9 +179,7 @@ const styles = StyleSheet.create({
     ...commonStyles.column,
     ...commonStyles.bRadius,
     position: "relative",
-    minHeight: 75,
     justifyContent: "center",
-    borderWidth: 1,
   },
   row: {
     flexDirection: "row",
@@ -187,6 +203,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     fontSize: 16,
     width: "100%",
+    height: 40
   },
   actions: {
     flexDirection: "row",
@@ -198,6 +215,19 @@ const styles = StyleSheet.create({
     right: 20,
     padding: 5,
     borderRadius: 6,
+  },
+  button: {
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    flexDirection:"row",
+    gap: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnText: {
+    fontWeight: "bold",
+    fontSize: 12,
   },
 });
 

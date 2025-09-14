@@ -21,16 +21,16 @@ interface Props {
   device: BleDevice;
   disabled?: boolean;
   onConnect: (deviceId: string) => Promise<boolean>;
-  onDisconnect: (deviceId: string) => Promise<void>;
+  onRedirectAfterConnect: () => void;
 }
 
-const BleDeviceTile: React.FC<Props> = ({ device, disabled = false, onConnect, onDisconnect }) => {
+const BleDeviceTile: React.FC<Props> = ({ device, disabled = false, onConnect, onRedirectAfterConnect }) => {
   const [isLoading, setIsLoading] = useState(false);
   const theme = useTheme()
-  const { bleDeviceId } = useConnection();
+  const { bleDevice } = useConnection();
   
-  const isConnected = bleDeviceId == device.id;
-  const actionLabel = isConnected ? "Disconnect" : "Connect"
+  const isConnected = bleDevice?.id == device.id;
+  const actionLabel = isConnected ? "Setting" : "Connect"
   const deviceName = device.name.split("-")[0]
 
 
@@ -39,7 +39,7 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false, onConnect, o
     setIsLoading(true);
 
     if(isConnected) {
-      await onDisconnect(device.id);
+      await onRedirectAfterConnect();
     } else {
       await onConnect(device.id);
     }
@@ -51,6 +51,7 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false, onConnect, o
       style={[
         styles.container,
         { backgroundColor : theme.colors.surfaceVariant },
+        isConnected && {borderColor:theme.colors.primary, borderWidth: 1},
       ]}
     >
       <View style={styles.info}>
@@ -79,6 +80,12 @@ const BleDeviceTile: React.FC<Props> = ({ device, disabled = false, onConnect, o
           ) 
         }
         
+        {
+          isConnected && (
+            <MaterialDesignIcons name="wifi-cog" color={theme.colors.onPrimary} />
+          ) 
+        }
+        
         <Text
           style={[
             styles.btnText,
@@ -99,6 +106,7 @@ const styles = StyleSheet.create({
     ...commonStyles.bRadius,
     padding: 12,
     justifyContent: "space-between",
+    position: "relative",
   },
   info: {
     flex: 1,
