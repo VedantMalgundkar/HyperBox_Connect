@@ -131,6 +131,8 @@ const styles = StyleSheet.create({
   container: {
     height: hp("28%"),
     width: wp("62%"),
+    position:"relative",
+    overflow: "hidden",
   },
   button: {
     marginBottom: CONTENT_SPACING,
