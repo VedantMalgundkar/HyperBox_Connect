@@ -18,6 +18,7 @@ import merge from "deepmerge";
 import AppNavigator from "./src/navigation";
 import { lightTheme, darkTheme } from "./src/styles/theme";
 import { ConnectionProvider } from "./src/api/ConnectionContext";
+import { ToastProvider } from "./src/api/ToastProvider";
 
 const { LightTheme: navLight, DarkTheme: navDark } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -49,7 +50,9 @@ export default function App() {
         <ConnectionProvider>
           <PaperProvider theme={theme}>
             <NavigationContainer theme={theme}>
-              <AppNavigator />
+              <ToastProvider>
+                <AppNavigator />
+              </ToastProvider>
             </NavigationContainer>
           </PaperProvider>
         </ConnectionProvider>

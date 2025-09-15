@@ -28,6 +28,7 @@ import { handlePermissions } from "../utils/permissions";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view"
 import BleDeviceTile from "../components/BleDeviceTile";
 import { Appbar } from "react-native-paper";
+import { useToast } from "../api/ToastProvider";
 
 
 type BleScannerNavigationProp = NativeStackNavigationProp<
@@ -100,6 +101,7 @@ const BLEScanner = () => {
   const [deviceId, setDeviceId] = useState("");
   const [whichDeviceIsConnecting, setWhichDeviceIsConnecting] = useState<string|null>(null);
   const theme = useTheme();
+  const showToast = useToast();
 
   const recentConectedDevices = getRecentDevices();
 
@@ -256,10 +258,12 @@ const BLEScanner = () => {
     return macRegex.test(mac.trim())
   }
 
-  const handleInputDeviceIdConnect = async (deviceId: string): Promise<boolean> => {
+  const handleInputDeviceIdConnect = async (
+    deviceId: string,
+  ): Promise<boolean> => {
     const state = await bleManager.state();
 
-     if (state !== State.PoweredOn) {
+    if (state !== State.PoweredOn) {
       console.log("❌ Bluetooth is off");
       Alert.alert(
         "Bluetooth Required",
@@ -281,31 +285,24 @@ const BLEScanner = () => {
     }
 
     setWhichDeviceIsConnecting(deviceId);
+
     if (isMacEmpty(deviceId)) {
-      Toast.show({
-        type: "custom_snackbar",
-        text1: "Please enter a device ID",
-        position: "bottom",
-        visibilityTime: 3000,
-      });
+      showToast({ message: "Please enter a device ID", duration: 3000 });
       setWhichDeviceIsConnecting(null);
       return false;
     }
 
     if (!isMacValid(deviceId)) {
-      Toast.show({
-        type: "custom_snackbar",
-        text1: "Expected format: AA:BB:CC:DD:EE:FF",
-        position: "bottom",
-        visibilityTime: 4000,
+      showToast({
+        message: "Expected format: AA:BB:CC:DD:EE:FF",
+        duration: 4000,
       });
       setWhichDeviceIsConnecting(null);
       return false;
     }
 
     await connectBleDevice(deviceId.trim());
-    // await fakeApi(4000);
-    setWhichDeviceIsConnecting(null)
+    setWhichDeviceIsConnecting(null);
     return true;
   };
 
