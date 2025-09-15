@@ -5,6 +5,7 @@ import { RootStackParamList } from "../navigation";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import WifiListWidget from "../components/WifiListWidget";
+import { Appbar, useTheme } from "react-native-paper";
 
 type WifiScannerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -16,21 +17,30 @@ type WifiScannerRouteProp = RouteProp<RootStackParamList, "WifiScanner">;
 const WifiScanner = () => {
   const navigation = useNavigation<WifiScannerNavigationProp>();
   const route = useRoute<WifiScannerRouteProp>();
+  const theme = useTheme();
 
   const { deviceId } = route.params;
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: "Nearby Networks",
-      headerStyle: {
-        backgroundColor: "#6200ee",
-      },
-      headerTintColor: "#fff",
+      header: () => (
+        <Appbar.Header style={{ backgroundColor: theme.colors.primary }}>
+          <Appbar.BackAction
+            onPress={() => navigation.goBack()}
+            color={theme.colors.onPrimary}
+          />
+          
+          <Appbar.Content
+            title="Nearby Networks"
+            titleStyle={{ color: theme.colors.onPrimary }}
+          />
+        </Appbar.Header>
+      ),
     });
-  }, [navigation]);
+  }, [navigation, theme]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: theme.colors.surface}]}>
       <WifiListWidget deviceId={deviceId} isFetchApi={false} />
     </View>
   );

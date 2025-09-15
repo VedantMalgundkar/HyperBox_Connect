@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef, useEffect } from "react"
-import { StyleSheet, View, TouchableOpacity, Vibration, Linking } from "react-native"
+import { StyleSheet, View, TouchableOpacity, Vibration, Linking, Text } from "react-native"
 import { useCameraDevice, useCodeScanner, useCameraPermission } from "react-native-vision-camera"
 import { Camera } from "react-native-vision-camera"
 import { CONTENT_SPACING, CONTROL_BUTTON_SIZE, SAFE_AREA_PADDING } from "./Constants"
@@ -56,7 +56,7 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
   // Show only QR icon until clicked
   if (!showCamera) {
     return (
-      <View style={[styles.container, { backgroundColor:theme.colors.surfaceVariant }, { justifyContent: "center", alignItems: "center" }]}>
+      <View style={[styles.container, { backgroundColor:theme.colors.surfaceVariant }, { justifyContent: "center", alignItems: "center", paddingTop: 8 }]}>
         <TouchableOpacity
           onPress={async () => {
             if (!hasPermission) {
@@ -66,7 +66,9 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
           }}
         >
           {/* <QrIcon size={150} color="white" /> */}
-          <MaterialIcons name="qr-code-scanner" color={theme.colors.onSurfaceVariant} size={180} />
+          {/* <MaterialIcons name="qr-code-scanner" color={theme.colors.onSurfaceVariant} size={180} /> */}
+          <MaterialDesignIcons name="qrcode-scan" color={theme.colors.onSurfaceVariant} size={160} />
+          <Text style={{textAlign:"center", fontSize:12, paddingTop: 8, color: theme.colors.onSurfaceVariant }}>Tap to Scan Device ID</Text>
         </TouchableOpacity>
       </View>
     )
