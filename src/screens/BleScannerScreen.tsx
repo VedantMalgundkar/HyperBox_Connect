@@ -97,7 +97,7 @@ const BLEScanner = () => {
   // const [scanning, setScanning] = useState(false);
   const navigation = useNavigation<BleScannerNavigationProp>();
   const [deviceId, setDeviceId] = useState("");
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [whichDeviceIsConnecting, setWhichDeviceIsConnecting] = useState<string|null>(null);
   const theme = useTheme();
 
   const recentConectedDevices = getRecentDevices();
@@ -264,12 +264,12 @@ const BLEScanner = () => {
       return false;
     }
 
-    if (isConnecting) {
+    if (whichDeviceIsConnecting) {
       console.log("already connecting >>>>");
       return false;
     }
 
-    setIsConnecting(true);
+    setWhichDeviceIsConnecting(deviceId);
     if (isMacEmpty(deviceId)) {
       Toast.show({
         type: "custom_snackbar",
@@ -277,7 +277,7 @@ const BLEScanner = () => {
         position: "bottom",
         visibilityTime: 3000,
       });
-      setIsConnecting(false);
+      setWhichDeviceIsConnecting(null);
       return false;
     }
 
@@ -288,12 +288,13 @@ const BLEScanner = () => {
         position: "bottom",
         visibilityTime: 4000,
       });
-      setIsConnecting(false);
+      setWhichDeviceIsConnecting(null);
       return false;
     }
 
     await connectBleDevice(deviceId.trim());
-    setIsConnecting(false);
+    // await fakeApi(4000);
+    setWhichDeviceIsConnecting(null)
     return true;
   };
 
@@ -351,8 +352,8 @@ const BLEScanner = () => {
       <Button
         mode="contained"
         onPress={() => handleInputDeviceIdConnect(deviceId)}
-        loading={isConnecting}
-        disabled={isConnecting}
+        loading={!!whichDeviceIsConnecting}
+        disabled={!!whichDeviceIsConnecting}
       >
         Connect
       </Button>

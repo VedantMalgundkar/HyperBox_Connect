@@ -47,8 +47,8 @@ export const handlePermissions = async (permissions: Permission[]): Promise<bool
     } else if (status === "blocked") {
         showPermissionPopup(
             "Permission required",
-            "Please enable permissions in Settings.",
-            () => console.log("User confirmed"),
+            "Please enable Bluetooth and Location permissions in Settings.",
+            () => Linking.openSettings(),
             "Open Settings"
         )
         return false;
@@ -56,3 +56,5 @@ export const handlePermissions = async (permissions: Permission[]): Promise<bool
 
     return false;
 };
+
+export const fakeApi = (ms = 1500) => new Promise(res => setTimeout(res, ms));
