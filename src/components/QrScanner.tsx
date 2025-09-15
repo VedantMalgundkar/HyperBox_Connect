@@ -39,11 +39,8 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
       Vibration.vibrate(1000);
 
       // Wait for onScanned to finish and check result
-      const result = await onScanned(value);
-
-      if (result) {
-        closeCamera();
-      }
+      await onScanned(value);
+      closeCamera();
     },
     [onScanned]
   );

@@ -11,8 +11,9 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
-import { Device } from "react-native-ble-plx";
+import { Device, State } from "react-native-ble-plx";
 import { commonStyles } from "../styles/common";
 import { RootStackParamList } from '../navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -256,6 +257,16 @@ const BLEScanner = () => {
   }
 
   const handleInputDeviceIdConnect = async (deviceId: string): Promise<boolean> => {
+    const state = await bleManager.state();
+
+     if (state !== State.PoweredOn) {
+      console.log("❌ Bluetooth is off");
+      Alert.alert(
+        "Bluetooth Required",
+        "Please turn on Bluetooth to connect to device."
+      );
+      return false;
+    }
 
     const permRes = await reqBluetooth();
 
