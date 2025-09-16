@@ -21,12 +21,13 @@ import {
 import {WifiNetwork} from '../services/bleService';
 import {useConnection} from '../api/ConnectionContext';
 import Toast from 'react-native-toast-message';
-import {useTheme} from 'react-native-paper';
+import {useTheme, ProgressBar} from 'react-native-paper';
+import { useToast } from '../api/ToastProvider';
+import { commonStyles } from '../styles/common';
 
 type Props = {
   deviceId: string;
   isFetchApi: boolean;
-  setWifiLoading: (loading: boolean) => void;
 };
 
 interface bleResponse {
@@ -39,12 +40,14 @@ interface WifiNetworkWithId extends WifiNetwork {
   id: string;
 }
 
-const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi, setWifiLoading}) => {
+const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
   const [wifiList, setWifiList] = useState<WifiNetworkWithId[]>([]);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [wifiLoading, setWifiLoading] = useState<boolean>(false);
 
   const {bleDevice} = useConnection();
+  const showToast = useToast();
 
   console.log('WifiListWidget bleDeviceId >>', bleDevice?.id);
 
@@ -179,12 +182,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi, setWifiLoading})
         return;
       }
   
-      const res = await sendWifiAction(bleManager, deviceId, ssid, argAction);
-  
-      console.log('action resp >>>>', res);
-  
-      // TODO: Implement BLE or API action here
-      loadWifiList();
+      await sendWifiAction(bleManager, deviceId, ssid, argAction);
     } catch (error:any) {
       console.log("error in handleWifiAction >>>",error.message)      
     }
@@ -287,17 +285,20 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi, setWifiLoading})
   const responseListener = () => {
     const handleRecievedData = (data: bleResponse) => {
       console.log('data received from ble >>', data);
-
-      Toast.show({
-        type: 'custom_snackbar', // success | error | info
-        text1: data.message ? data.message : data.error,
-        position: 'bottom',
-        visibilityTime: 3000,
-      });
-
-      if (data.status === 'success') {
-        loadWifiList();
+      
+      if(data.status.toLowerCase().endsWith("ing")){
+        setWifiLoading(true);
       }
+      
+      if (data.status === 'success') {
+        setWifiLoading(false);
+        loadWifiList();
+      } else {
+        if(data?.message) {
+          showToast({ message: data.message, duration: 3000 });
+        }
+      }
+
     };
 
     const handleError = (error: Error) => {
@@ -332,12 +333,19 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi, setWifiLoading})
   }, [bleManager, deviceId]);
 
   return (
-    <View style={{flex: 1}}>
+    <View style={{flex: 1, position: "relative"}}>
+      { wifiLoading && (
+        <ProgressBar
+          indeterminate
+          color={theme.colors.primary}
+          style={styles.loader}
+        />
+      )}
       <ScrollView
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        contentContainerStyle={{padding: 10}}>
+        contentContainerStyle={styles.content}>
         {connectedWifi.length > 0 && (
           <View style={styles.section}>
             {connectedWifi.map(renderWifiTile)}
@@ -466,6 +474,18 @@ const getWifiIcon = (
 };
 
 const styles = StyleSheet.create({
+  loader: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 4,
+    },
+  content: {
+    ...commonStyles.container,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
   tile: {
     paddingVertical: 10,
   },
