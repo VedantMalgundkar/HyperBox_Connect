@@ -228,6 +228,10 @@ const BLEScanner = () => {
       navigation.navigate('WifiScanner', { deviceId: bleDevice.id });
     }
   }
+  
+  // const fakeRedirect = () => {
+  //   navigation.navigate('WifiScanner', { deviceId: "hiii" });
+  // }
 
   useEffect(() => {
     handleRedirect();
@@ -365,6 +369,15 @@ const BLEScanner = () => {
       >
         Connect
       </Button>
+      
+      {/* <Button
+        mode="contained"
+        onPress={fakeRedirect}
+        loading={!!whichDeviceIsConnecting}
+        disabled={!!whichDeviceIsConnecting}
+      >
+        redirect
+      </Button> */}
       {/* </View> */}
 
       {

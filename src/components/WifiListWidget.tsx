@@ -26,6 +26,7 @@ import {useTheme} from 'react-native-paper';
 type Props = {
   deviceId: string;
   isFetchApi: boolean;
+  setWifiLoading: (loading: boolean) => void;
 };
 
 interface bleResponse {
@@ -38,11 +39,9 @@ interface WifiNetworkWithId extends WifiNetwork {
   id: string;
 }
 
-const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
+const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi, setWifiLoading}) => {
   const [wifiList, setWifiList] = useState<WifiNetworkWithId[]>([]);
 
-  const [loading, setLoading] = useState(false);
-  const [writeLoading, setWriteLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const {bleDevice} = useConnection();
@@ -58,13 +57,9 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
   const {bleManager} = useConnection();
   const theme = useTheme();
 
-  // Simulated BLE + API services
-  const bleService = useRef<any>(null);
-  const httpService = useRef<any>(null);
-
   useEffect(() => {
     const init = async () => {
-      setWriteLoading(true);
+      setWifiLoading(true);
       try {
         if (isFetchApi) {
           console.log('Connect BLE device: ', deviceId);
@@ -74,7 +69,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
       } catch (e) {
         console.warn('BLE/API init failed:', e);
       } finally {
-        setWriteLoading(false);
+        setWifiLoading(false);
       }
     };
     init();
@@ -82,7 +77,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
   }, []);
 
   const loadWifiList = useCallback(async () => {
-    setLoading(true);
+    setWifiLoading(true);
     try {
       let result: WifiNetwork[] = [];
       if (isFetchApi) {
@@ -91,7 +86,45 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
         console.log('Fetching via BLE...');
 
         result = await discoverAndReadWifi(bleManager, deviceId);
+//         result = [
+//   {
+//     s: "Home_Wifi",
+//     sr: 45, // strong signal
+//     lck: 1,  // locked
+//     u: 1,    // currently connected
+//     sav: 1,  // saved
+//   },
+//   {
+//     s: "Vedant_5G",
+//     sr: 60, // good signal
+//     lck: 1,
+//     u: 0,
+//     sav: 1,
+//   },
+//   {
+//     s: "Coffee_Shop_Free",
+//     sr: 70, // average signal
+//     lck: 0,  // open network
+//     u: 0,
+//     sav: 0,
+//   },
+//   {
+//     s: "Office_Network",
+//     sr: 80, // weaker signal
+//     lck: 1,
+//     u: 0,
+//     sav: 1,
+//   },
+//   {
+//     s: "Random_Hotspot",
+//     sr: 90, // very weak
+//     lck: 0,
+//     u: 0,
+//     sav: 0,
+//   },
+// ];
 
+      
         console.log('ble res >>>>', result);
       }
 
@@ -108,7 +141,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
     } catch (e) {
       console.error('Error loading Wi-Fi list:', e);
     } finally {
-      setLoading(false);
+      setWifiLoading(false);
       setRefreshing(false);
     }
   }, [isFetchApi, deviceId]);
@@ -122,33 +155,40 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
     ssid: string,
     action: 'connect' | 'disconnect' | 'forget',
   ) => {
-    let argAction: 'add' | 'sub' | 'del';
 
-    switch (action) {
-      case 'connect':
-        argAction = 'add';
-        break;
-
-      case 'disconnect':
-        argAction = 'sub';
-        break;
-
-      case 'forget':
-        argAction = 'del';
-        break;
+    try {
+      
+      let argAction: 'add' | 'sub' | 'del';
+  
+      switch (action) {
+        case 'connect':
+          argAction = 'add';
+          break;
+  
+        case 'disconnect':
+          argAction = 'sub';
+          break;
+  
+        case 'forget':
+          argAction = 'del';
+          break;
+      }
+  
+      if (!argAction) {
+        console.log('invalid arg action');
+        return;
+      }
+  
+      const res = await sendWifiAction(bleManager, deviceId, ssid, argAction);
+  
+      console.log('action resp >>>>', res);
+  
+      // TODO: Implement BLE or API action here
+      loadWifiList();
+    } catch (error:any) {
+      console.log("error in handleWifiAction >>>",error.message)      
     }
-
-    if (!argAction) {
-      console.log('invalid arg action');
-      return;
-    }
-
-    const res = await sendWifiAction(bleManager, deviceId, ssid, argAction);
-
-    console.log('action resp >>>>', res);
-
-    // TODO: Implement BLE or API action here
-    loadWifiList();
+    
   };
 
   const handleWifiWriteCredentials = async (ssid: string, password: string) => {
@@ -264,14 +304,20 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
       console.log('error recieved from ble >>', error);
     };
 
-    const subs = listenWifiStatus(
-      bleManager,
-      deviceId,
-      handleRecievedData,
-      handleError,
-    );
+    try {
+      const subs = listenWifiStatus(
+        bleManager,
+        deviceId,
+        handleRecievedData,
+        handleError,
+      );
+  
+      return subs;
 
-    return subs;
+    } catch(error:any) {
+      console.log("listenWifiStatus error >>",error.message);
+    }
+
   };
 
   useEffect(() => {
@@ -287,13 +333,6 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
 
   return (
     <View style={{flex: 1}}>
-      {writeLoading && (
-        <ActivityIndicator
-          size="small"
-          color="blue"
-          style={{marginVertical: 4}}
-        />
-      )}
       <ScrollView
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -397,14 +436,21 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
             <Text style={{fontSize: 16, color: 'red'}}>Cancel</Text>
           </TouchableOpacity>
         </CommonModal>
+        
+        {/* <Button
+        mode="contained"
+        onPress={()=>setWifiLoading(true)}
+      >
+        on Loading
+      </Button>
+        
+        <Button
+        mode="contained"
+        onPress={()=>setWifiLoading(false)}
+      >
+        off loading
+      </Button> */}
 
-        {loading && (
-          <ActivityIndicator
-            size="large"
-            color="blue"
-            style={{marginTop: 20}}
-          />
-        )}
       </ScrollView>
     </View>
   );
