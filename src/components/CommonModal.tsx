@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ViewStyle, Platform, Dimensions, StatusBar } from "react-native";
+import { View, ViewStyle, Platform, Dimensions, StatusBar, StyleProp } from "react-native";
 import Modal, { ModalProps } from "react-native-modal";
 
 // Get device width and height
@@ -10,8 +10,8 @@ interface BottomSheetModalProps extends Partial<ModalProps> {
   isVisible: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  containerStyle: ViewStyle;
-  modalStyle: ViewStyle;
+  containerStyle: StyleProp<ViewStyle>;
+  modalStyle: StyleProp<ViewStyle>;
 }
 
 const CommonModal: React.FC<BottomSheetModalProps> = ({

@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  TextInput,
+  // TextInput,
 } from 'react-native';
 import {MaterialIcons} from '@react-native-vector-icons/material-icons';
 import CommonModal from './CommonModal';
@@ -21,7 +21,7 @@ import {
 import {WifiNetwork} from '../services/bleService';
 import {useConnection} from '../api/ConnectionContext';
 import Toast from 'react-native-toast-message';
-import {useTheme, ProgressBar} from 'react-native-paper';
+import {useTheme, ProgressBar, TextInput, Button} from 'react-native-paper';
 import { useToast } from '../api/ToastProvider';
 import { commonStyles } from '../styles/common';
 
@@ -375,25 +375,52 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
           isVisible={!!selectedSsid}
           onClose={resetStates}
           modalStyle={{justifyContent: 'center', margin: 20}}
-          containerStyle={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Enter Wi-Fi Password</Text>
-          <Text style={styles.modalSubtitle}>{selectedSsid}</Text>
+          containerStyle={[styles.modalContainer,{backgroundColor:theme.colors.background}]}>
+          <View style={styles.header}>
+            <Text style={styles.modalTitle}>Enter Wi-Fi Password</Text>
+            <Text style={styles.modalSubtitle}>{selectedSsid}</Text>
+          </View>
 
-          <TextInput
+          {/* <TextInput
             style={styles.input}
             placeholder="Password"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
-          />
+          /> */}
+          <View style={styles.body}>
+            <TextInput
+              mode="flat"
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
 
           <View style={styles.modalActions}>
-            <TouchableOpacity
+
+            <Button 
+              mode="text" 
+              onPress={resetStates}>
+              Cancel
+            </Button>
+            
+            <Button 
+              mode="text" 
+              onPress={() => {
+                if (selectedSsid) {
+                  handleWifiWriteCredentials(selectedSsid, password);
+                }
+              }}>
+              Connect
+            </Button>
+
+            {/* <TouchableOpacity
               style={[styles.actionBtn, {backgroundColor: '#ccc'}]}
               onPress={resetStates}>
               <Text>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </TouchableOpacity> */}
+            {/* <TouchableOpacity
               style={[styles.actionBtn, {backgroundColor: '#6200ee'}]}
               onPress={() => {
                 if (selectedSsid) {
@@ -401,7 +428,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
                 }
               }}>
               <Text style={{color: 'white'}}>Connect</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </CommonModal>
 
@@ -521,8 +548,11 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 30,
+    padding: 27,
+  },
+  header: {
+    marginBottom:1,
   },
   modalTitle: {
     fontSize: 18,
@@ -533,6 +563,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'gray',
     marginBottom: 12,
+  },
+  body : {
+    // backgroundColor:"yellow"
   },
   input: {
     borderWidth: 1,
@@ -545,6 +578,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 10,
+    marginTop: 15,
   },
   actionBtn: {
     paddingVertical: 10,
