@@ -1,6 +1,10 @@
 import React from "react";
-import { View, ViewStyle } from "react-native";
+import { View, ViewStyle, Platform, Dimensions, StatusBar } from "react-native";
 import Modal, { ModalProps } from "react-native-modal";
+
+// Get device width and height
+const deviceWidth = Dimensions.get("window").width;
+const deviceHeight = Dimensions.get('window').height;
 
 interface BottomSheetModalProps extends Partial<ModalProps> {
   isVisible: boolean;
@@ -16,16 +20,19 @@ const CommonModal: React.FC<BottomSheetModalProps> = ({
   children,
   containerStyle,
   modalStyle,
-  ...restProps // 👈 pass everything else to Modal
+  ...restProps
 }) => {
+  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight : 20;
   return (
     <Modal
       isVisible={isVisible}
       onBackdropPress={onClose}
       onBackButtonPress={onClose}
-      style={[modalStyle]}
       statusBarTranslucent={true}
-      {...restProps} // 👈 consumer overrides (animation, timings, etc.)
+      deviceWidth={deviceWidth}
+      deviceHeight={statusBarHeight && deviceHeight+statusBarHeight}
+      style={[ modalStyle]}
+      {...restProps}
     >
       <View
         style={[
