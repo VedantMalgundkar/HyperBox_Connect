@@ -88,44 +88,44 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
       } else {
         console.log('Fetching via BLE...');
 
-        result = await discoverAndReadWifi(bleManager, deviceId);
-//         result = [
-//   {
-//     s: "Home_Wifi",
-//     sr: 45, // strong signal
-//     lck: 1,  // locked
-//     u: 1,    // currently connected
-//     sav: 1,  // saved
-//   },
-//   {
-//     s: "Vedant_5G",
-//     sr: 60, // good signal
-//     lck: 1,
-//     u: 0,
-//     sav: 1,
-//   },
-//   {
-//     s: "Coffee_Shop_Free",
-//     sr: 70, // average signal
-//     lck: 0,  // open network
-//     u: 0,
-//     sav: 0,
-//   },
-//   {
-//     s: "Office_Network",
-//     sr: 80, // weaker signal
-//     lck: 1,
-//     u: 0,
-//     sav: 1,
-//   },
-//   {
-//     s: "Random_Hotspot",
-//     sr: 90, // very weak
-//     lck: 0,
-//     u: 0,
-//     sav: 0,
-//   },
-// ];
+        // result = await discoverAndReadWifi(bleManager, deviceId);
+        result = [
+  {
+    s: "Home_Wifi",
+    sr: 45, // strong signal
+    lck: 1,  // locked
+    u: 1,    // currently connected
+    sav: 1,  // saved
+  },
+  {
+    s: "Vedant_5G",
+    sr: 60, // good signal
+    lck: 1,
+    u: 0,
+    sav: 1,
+  },
+  {
+    s: "Coffee_Shop_Free",
+    sr: 70, // average signal
+    lck: 1,  // open network
+    u: 0,
+    sav: 0,
+  },
+  {
+    s: "Office_Network",
+    sr: 80, // weaker signal
+    lck: 1,
+    u: 0,
+    sav: 1,
+  },
+  {
+    s: "Random_Hotspot",
+    sr: 90, // very weak
+    lck: 1,
+    u: 0,
+    sav: 0,
+  },
+];
 
       
         console.log('ble res >>>>', result);
@@ -282,55 +282,55 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
     );
   };
 
-  const responseListener = () => {
-    const handleRecievedData = (data: bleResponse) => {
-      console.log('data received from ble >>', data);
+  // const responseListener = () => {
+  //   const handleRecievedData = (data: bleResponse) => {
+  //     console.log('data received from ble >>', data);
       
-      if(data.status.toLowerCase().endsWith("ing")){
-        setWifiLoading(true);
-      }
+  //     if(data.status.toLowerCase().endsWith("ing")){
+  //       setWifiLoading(true);
+  //     }
       
-      if (data.status === 'success') {
-        setWifiLoading(false);
-        loadWifiList();
-      } else {
-        if(data?.message) {
-          showToast({ message: data.message, duration: 3000 });
-        }
-      }
+  //     if (data.status === 'success') {
+  //       setWifiLoading(false);
+  //       loadWifiList();
+  //     } else {
+  //       if(data?.message) {
+  //         showToast({ message: data.message, duration: 3000 });
+  //       }
+  //     }
 
-    };
+  //   };
 
-    const handleError = (error: Error) => {
-      console.log('error recieved from ble >>', error);
-    };
+  //   const handleError = (error: Error) => {
+  //     console.log('error recieved from ble >>', error);
+  //   };
 
-    try {
-      const subs = listenWifiStatus(
-        bleManager,
-        deviceId,
-        handleRecievedData,
-        handleError,
-      );
+  //   try {
+  //     const subs = listenWifiStatus(
+  //       bleManager,
+  //       deviceId,
+  //       handleRecievedData,
+  //       handleError,
+  //     );
   
-      return subs;
+  //     return subs;
 
-    } catch(error:any) {
-      console.log("listenWifiStatus error >>",error.message);
-    }
+  //   } catch(error:any) {
+  //     console.log("listenWifiStatus error >>",error.message);
+  //   }
 
-  };
+  // };
 
-  useEffect(() => {
-    // Start listening
-    const subscription = responseListener();
+  // useEffect(() => {
+  //   // Start listening
+  //   const subscription = responseListener();
 
-    // Cleanup on unmount
-    return () => {
-      subscription?.remove();
-      console.log('BLE listener removed');
-    };
-  }, [bleManager, deviceId]);
+  //   // Cleanup on unmount
+  //   return () => {
+  //     subscription?.remove();
+  //     console.log('BLE listener removed');
+  //   };
+  // }, [bleManager, deviceId]);
 
   return (
     <View style={{flex: 1, position: "relative"}}>
