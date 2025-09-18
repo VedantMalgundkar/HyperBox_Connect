@@ -20,10 +20,10 @@ import {
 } from '../services/bleService';
 import {WifiNetwork} from '../services/bleService';
 import {useConnection} from '../api/ConnectionContext';
-import Toast from 'react-native-toast-message';
 import {useTheme, ProgressBar, TextInput, Button} from 'react-native-paper';
 import { useToast } from '../api/ToastProvider';
 import { commonStyles } from '../styles/common';
+import { WifiCredsDialog } from './WifiCredsDialog';
 
 type Props = {
   deviceId: string;
@@ -52,13 +52,17 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
   console.log('WifiListWidget bleDeviceId >>', bleDevice?.id);
 
   // 🔑 For modal
-  const [selectedSsid, setSelectedSsid] = useState<string | null>(null);
-  const [password, setPassword] = useState('');
+  const [selectedSsid, setSelectedSsid] = useState<string | undefined>(undefined);
 
-  const [menuForWifi, setMenuForWifi] = useState<WifiNetwork | null>();
+  const [menuForWifi, setMenuForWifi] = useState<WifiNetwork | undefined>(undefined);
 
   const {bleManager} = useConnection();
   const theme = useTheme();
+
+  const menuOptions = [
+    ...(menuForWifi?.u === 1 ? ['Disconnect'] : ['Connect']),
+    ...(menuForWifi?.sav === 1 ? ['Forget'] : []),
+    ];
 
   useEffect(() => {
     const init = async () => {
@@ -88,44 +92,44 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
       } else {
         console.log('Fetching via BLE...');
 
-        // result = await discoverAndReadWifi(bleManager, deviceId);
-        result = [
-  {
-    s: "Home_Wifi",
-    sr: 45, // strong signal
-    lck: 1,  // locked
-    u: 1,    // currently connected
-    sav: 1,  // saved
-  },
-  {
-    s: "Vedant_5G",
-    sr: 60, // good signal
-    lck: 1,
-    u: 0,
-    sav: 1,
-  },
-  {
-    s: "Coffee_Shop_Free",
-    sr: 70, // average signal
-    lck: 1,  // open network
-    u: 0,
-    sav: 0,
-  },
-  {
-    s: "Office_Network",
-    sr: 80, // weaker signal
-    lck: 1,
-    u: 0,
-    sav: 1,
-  },
-  {
-    s: "Random_Hotspot",
-    sr: 90, // very weak
-    lck: 1,
-    u: 0,
-    sav: 0,
-  },
-];
+        result = await discoverAndReadWifi(bleManager, deviceId);
+//         result = [
+//   {
+//     s: "Home_Wifi",
+//     sr: 45, // strong signal
+//     lck: 1,  // locked
+//     u: 1,    // currently connected
+//     sav: 1,  // saved
+//   },
+//   {
+//     s: "Vedant_5G",
+//     sr: 60, // good signal
+//     lck: 1,
+//     u: 0,
+//     sav: 1,
+//   },
+//   {
+//     s: "Coffee_Shop_Free",
+//     sr: 70, // average signal
+//     lck: 1,  // open network
+//     u: 0,
+//     sav: 0,
+//   },
+//   {
+//     s: "Office_Network",
+//     sr: 80, // weaker signal
+//     lck: 1,
+//     u: 0,
+//     sav: 1,
+//   },
+//   {
+//     s: "Random_Hotspot",
+//     sr: 90, // very weak
+//     lck: 1,
+//     u: 0,
+//     sav: 0,
+//   },
+// ];
 
       
         console.log('ble res >>>>', result);
@@ -189,24 +193,9 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
     
   };
 
-  const handleWifiWriteCredentials = async (ssid: string, password: string) => {
-    try {
-      console.log({ssid, password});
-      await writeCredentials(bleManager, deviceId, ssid, password);
-      resetStates();
-    } catch (error) {
-      console.error('Error writting Wi-Fi creds:', error);
-    }
-  };
-
   const showWifiMenu = (wifi: WifiNetwork) => {
     setMenuForWifi(wifi);
-  };
-
-  const menuOptions = [
-    ...(menuForWifi?.u === 1 ? ['Disconnect'] : ['Connect']),
-    ...(menuForWifi?.sav === 1 ? ['Forget'] : []),
-  ];
+  };  
 
   const {connectedWifi, savedWifi, otherWifi} = useMemo(() => {
     return {
@@ -217,9 +206,8 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
   }, [wifiList]);
 
   const resetStates = () => {
-    setSelectedSsid(null);
-    setPassword('');
-    setMenuForWifi(null);
+    setSelectedSsid(undefined);
+    setMenuForWifi(undefined);
   };
 
   const renderWifiTile = (wifi: WifiNetworkWithId) => {
@@ -282,55 +270,55 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
     );
   };
 
-  // const responseListener = () => {
-  //   const handleRecievedData = (data: bleResponse) => {
-  //     console.log('data received from ble >>', data);
+  const responseListener = () => {
+    const handleRecievedData = (data: bleResponse) => {
+      console.log('data received from ble >>', data);
       
-  //     if(data.status.toLowerCase().endsWith("ing")){
-  //       setWifiLoading(true);
-  //     }
+      if(data.status.toLowerCase().endsWith("ing")){
+        setWifiLoading(true);
+      }
       
-  //     if (data.status === 'success') {
-  //       setWifiLoading(false);
-  //       loadWifiList();
-  //     } else {
-  //       if(data?.message) {
-  //         showToast({ message: data.message, duration: 3000 });
-  //       }
-  //     }
+      if (data.status === 'success') {
+        setWifiLoading(false);
+        loadWifiList();
+      } else {
+        if(data?.message) {
+          showToast({ message: data.message, duration: 3000 });
+        }
+      }
 
-  //   };
+    };
 
-  //   const handleError = (error: Error) => {
-  //     console.log('error recieved from ble >>', error);
-  //   };
+    const handleError = (error: Error) => {
+      console.log('error recieved from ble >>', error);
+    };
 
-  //   try {
-  //     const subs = listenWifiStatus(
-  //       bleManager,
-  //       deviceId,
-  //       handleRecievedData,
-  //       handleError,
-  //     );
+    try {
+      const subs = listenWifiStatus(
+        bleManager,
+        deviceId,
+        handleRecievedData,
+        handleError,
+      );
   
-  //     return subs;
+      return subs;
 
-  //   } catch(error:any) {
-  //     console.log("listenWifiStatus error >>",error.message);
-  //   }
+    } catch(error:any) {
+      console.log("listenWifiStatus error >>",error.message);
+    }
 
-  // };
+  };
 
-  // useEffect(() => {
-  //   // Start listening
-  //   const subscription = responseListener();
+  useEffect(() => {
+    // Start listening
+    const subscription = responseListener();
 
-  //   // Cleanup on unmount
-  //   return () => {
-  //     subscription?.remove();
-  //     console.log('BLE listener removed');
-  //   };
-  // }, [bleManager, deviceId]);
+    // Cleanup on unmount
+    return () => {
+      subscription?.remove();
+      console.log('BLE listener removed');
+    };
+  }, [bleManager, deviceId]);
 
   return (
     <View style={{flex: 1, position: "relative"}}>
@@ -370,67 +358,12 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
           </>
         )}
 
-        {/* 🔑 Password Modal */}
-        <CommonModal
-          isVisible={!!selectedSsid}
-          onClose={resetStates}
-          modalStyle={{justifyContent: 'center', margin: 20}}
-          containerStyle={[styles.modalContainer,{backgroundColor:theme.colors.background}]}>
-          <View style={styles.header}>
-            <Text style={styles.modalTitle}>Enter Wi-Fi Password</Text>
-            <Text style={styles.modalSubtitle}>{selectedSsid}</Text>
-          </View>
-
-          {/* <TextInput
-            style={styles.input}
-            placeholder="Password"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          /> */}
-          <View style={styles.body}>
-            <TextInput
-              mode="flat"
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-            />
-          </View>
-
-          <View style={styles.modalActions}>
-
-            <Button 
-              mode="text" 
-              onPress={resetStates}>
-              Cancel
-            </Button>
-            
-            <Button 
-              mode="text" 
-              onPress={() => {
-                if (selectedSsid) {
-                  handleWifiWriteCredentials(selectedSsid, password);
-                }
-              }}>
-              Connect
-            </Button>
-
-            {/* <TouchableOpacity
-              style={[styles.actionBtn, {backgroundColor: '#ccc'}]}
-              onPress={resetStates}>
-              <Text>Cancel</Text>
-            </TouchableOpacity> */}
-            {/* <TouchableOpacity
-              style={[styles.actionBtn, {backgroundColor: '#6200ee'}]}
-              onPress={() => {
-                if (selectedSsid) {
-                  handleWifiWriteCredentials(selectedSsid, password);
-                }
-              }}>
-              <Text style={{color: 'white'}}>Connect</Text>
-            </TouchableOpacity> */}
-          </View>
-        </CommonModal>
+       <WifiCredsDialog
+        visible={!!selectedSsid}
+        ssid={selectedSsid}
+        onDismiss={resetStates}
+        deviceId={deviceId}
+        />        
 
         <CommonModal
           isVisible={!!menuForWifi}

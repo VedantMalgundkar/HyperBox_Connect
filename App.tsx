@@ -7,6 +7,7 @@ import {
   MD3DarkTheme,
   PaperProvider,
   adaptNavigationTheme,
+  Portal,
 } from "react-native-paper";
 import {
   DarkTheme as NavigationDarkTheme,
@@ -40,20 +41,22 @@ export default function App() {
   const theme = isDarkMode ? CombinedDarkTheme : CombinedLightTheme;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar
-          translucent={false}
-          backgroundColor={theme.colors.primary}  // 👈 match AppBar background
+          translucent={true}
+          backgroundColor="transparent"
           barStyle={isDarkMode ? "light-content" : "dark-content"}
         />
         <ConnectionProvider>
           <PaperProvider theme={theme}>
-            <NavigationContainer theme={theme}>
-              <ToastProvider>
-                <AppNavigator />
-              </ToastProvider>
-            </NavigationContainer>
+            <Portal.Host>
+              <NavigationContainer theme={theme}>
+                <ToastProvider>
+                  <AppNavigator />
+                </ToastProvider>
+              </NavigationContainer>
+            </Portal.Host>
           </PaperProvider>
         </ConnectionProvider>
       </SafeAreaProvider>
