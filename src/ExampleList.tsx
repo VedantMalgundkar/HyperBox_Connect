@@ -12,7 +12,6 @@ import AppbarExample from './Examples/AppbarExample';
 import AvatarExample from './Examples/AvatarExample';
 import BadgeExample from './Examples/BadgeExample';
 import BannerExample from './Examples/BannerExample';
-import BottomNavigationBarExample from './Examples/BottomNavigationBarExample';
 import BottomNavigationExample from './Examples/BottomNavigationExample';
 import ButtonExample from './Examples/ButtonExample';
 import CardExample from './Examples/CardExample';
@@ -27,7 +26,6 @@ import IconButtonExample from './Examples/IconButtonExample';
 import IconExample from './Examples/IconExample';
 import ListAccordionExample from './Examples/ListAccordionExample';
 import ListAccordionExampleGroup from './Examples/ListAccordionGroupExample';
-import ListItemExample from './Examples/ListItemExample';
 import ListSectionExample from './Examples/ListSectionExample';
 import MenuExample from './Examples/MenuExample';
 import ProgressBarExample from './Examples/ProgressBarExample';
@@ -46,7 +44,6 @@ import TeamsList from './Examples/TeamsList';
 import TextExample from './Examples/TextExample';
 import TextInputExample from './Examples/TextInputExample';
 import ThemeExample from './Examples/ThemeExample';
-import ThemingWithReactNavigation from './Examples/ThemingWithReactNavigation';
 import ToggleButtonExample from './Examples/ToggleButtonExample';
 import TooltipExample from './Examples/TooltipExample';
 import TouchableRippleExample from './Examples/TouchableRippleExample';
@@ -62,7 +59,6 @@ export const mainExamples: Record<
   avatar: AvatarExample,
   badge: BadgeExample,
   banner: BannerExample,
-  bottomNavigationBarExample: BottomNavigationBarExample,
   bottomNavigation: BottomNavigationExample,
   button: ButtonExample,
   card: CardExample,
@@ -78,7 +74,6 @@ export const mainExamples: Record<
   listAccordion: ListAccordionExample,
   listAccordionGroup: ListAccordionExampleGroup,
   listSection: ListSectionExample,
-  listItem: ListItemExample,
   menu: MenuExample,
   progressbar: ProgressBarExample,
   radio: RadioButtonExample,
@@ -95,14 +90,12 @@ export const mainExamples: Record<
   tooltipExample: TooltipExample,
   touchableRipple: TouchableRippleExample,
   theme: ThemeExample,
-  themingWithReactNavigation: ThemingWithReactNavigation,
 };
 
 export const nestedExamples: Record<
   string,
   React.ComponentType<any> & { title: string }
 > = {
-  themingWithReactNavigation: ThemingWithReactNavigation,
   teamDetails: TeamDetails,
   teamsList: TeamsList,
   segmentedButtonRealCase: SegmentedButtonRealCase,

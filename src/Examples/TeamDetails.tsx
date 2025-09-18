@@ -8,7 +8,9 @@ import {
   View,
 } from 'react-native';
 
-import type { StackNavigationProp } from '@react-navigation/stack';
+// import type { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
 import {
   Appbar,
   BottomNavigation,
@@ -47,7 +49,7 @@ type Route = {
 };
 
 type Props = {
-  navigation: StackNavigationProp<{}>;
+  navigation: NativeStackNavigationProp<{}>;
   route: Route;
 };
 

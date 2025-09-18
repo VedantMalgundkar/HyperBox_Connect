@@ -6,7 +6,9 @@ import {
   View,
 } from 'react-native';
 
-import type { StackNavigationProp } from '@react-navigation/stack';
+// import type { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
 import {
   Appbar,
   Button,
@@ -22,7 +24,7 @@ import ScreenWrapper from '../ScreenWrapper';
 type ContextualMenuCoord = { x: number; y: number };
 
 type Props = {
-  navigation: StackNavigationProp<{}>;
+  navigation: NativeStackNavigationProp<{}>;
 };
 
 type MenuVisibility = {

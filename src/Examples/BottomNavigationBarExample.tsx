@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+// import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+// import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { CommonActions } from '@react-navigation/native';
 import { Text, BottomNavigation } from 'react-native-paper';
@@ -23,67 +24,6 @@ function SettingsScreen() {
     </View>
   );
 }
-
-export default function BottomNavigationBarExample() {
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-      tabBar={({ navigation, state, descriptors, insets }) => (
-        <BottomNavigation.Bar
-          navigationState={state}
-          safeAreaInsets={insets}
-          onTabPress={({ route, preventDefault }) => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-
-            if (event.defaultPrevented) {
-              preventDefault();
-            } else {
-              navigation.dispatch({
-                ...CommonActions.navigate(route.name, route.params),
-                target: state.key,
-              });
-            }
-          }}
-          renderIcon={({ route, focused, color }) =>
-            descriptors[route.key].options.tabBarIcon?.({
-              focused,
-              color,
-              size: 24,
-            }) || null
-          }
-          getLabelText={({ route }) => descriptors[route.key].route.name}
-        />
-      )}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => {
-            return <Icon name="home" size={size} color={color} />;
-          },
-        }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => {
-            return <Icon name="cog" size={size} color={color} />;
-          },
-        }}
-      />
-    </Tab.Navigator>
-  );
-}
-
-BottomNavigationBarExample.title = 'Bottom Navigation Bar';
 
 const styles = StyleSheet.create({
   container: {

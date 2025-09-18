@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 
-import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+// import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFonts } from 'expo-font';
 import {
   configureFonts,
@@ -178,13 +178,7 @@ const TextInputExample = () => {
               value={text}
               onChangeText={(text) => inputActionHandler('text', text)}
               left={
-                <TextInput.Icon
-                  icon="magnify"
-                  color={flatLeftIcon}
-                  onPress={() => {
-                    changeIconColor('flatLeftIcon');
-                  }}
-                />
+                <Text>left btn</Text>
               }
               maxLength={100}
               right={<TextInput.Affix text={`${text.length}/100`} />}
@@ -202,14 +196,7 @@ const TextInputExample = () => {
               left={
                 <TextInput.Icon
                   icon={() => (
-                    <Icon
-                      name="home"
-                      size={24}
-                      color={customIcon}
-                      onPress={() => {
-                        changeIconColor('customIcon');
-                      }}
-                    />
+                    <Text>Home</Text>
                   )}
                 />
               }

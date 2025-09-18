@@ -2,7 +2,9 @@ import * as React from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { Animated, FlatList, Platform, StyleSheet, View } from 'react-native';
 
-import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+// import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+// import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
+
 import {
   Avatar,
   MD2Colors,
@@ -94,7 +96,7 @@ const AnimatedFABExample = () => {
                 </TextComponent>
               </View>
 
-              <Icon
+              {/* <Icon
                 name={item.favorite ? 'star' : 'star-outline'}
                 color={
                   item.favorite
@@ -108,7 +110,7 @@ const AnimatedFABExample = () => {
                 size={20}
                 onPress={() => setVisible(!visible)}
                 style={styles.icon}
-              />
+              /> */}
             </View>
           </View>
         </View>

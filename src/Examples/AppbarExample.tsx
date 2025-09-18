@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
-import type { StackNavigationProp } from '@react-navigation/stack';
+// import type { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+
 import {
   Appbar,
   FAB,
@@ -14,12 +17,12 @@ import {
 } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { yellowA200 } from '../../../src/styles/themes/v2/colors';
+import { yellowA200 } from '../styles/themes/v2/colors';
 import { useExampleTheme } from '../hooks/useExampleTheme';
 import ScreenWrapper from '../ScreenWrapper';
 
 type Props = {
-  navigation: StackNavigationProp<{}>;
+  navigation: NativeStackNavigationProp<{}>;
 };
 
 type AppbarModes = 'small' | 'medium' | 'large' | 'center-aligned';
