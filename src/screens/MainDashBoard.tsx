@@ -15,7 +15,7 @@ import CommonModal from '../components/CommonModal';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
 import { RootStackParamList } from '../navigation';
-import { useTheme } from "react-native-paper";
+import { useTheme, Appbar } from "react-native-paper";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 
@@ -41,42 +41,76 @@ const MainDashBoard = ({ navigation }: Props) => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: "Light Studio",
-      headerStyle: { backgroundColor: theme.colors.primary },
-      headerTintColor: theme.colors.onPrimary,
-      headerRight: () => (
-        <View style={[commonStyles.row, { gap: 5 }]}>
+      header: () => (
+        <Appbar.Header style={{ backgroundColor: theme.colors.primary }}>
+          {/* Title */}
+          <Appbar.Content
+            title="Light Studio"
+            titleStyle={{ color: theme.colors.onPrimary }}
+          />
+
+          {/* Change Device Button */}
           <View
             onTouchEnd={openDrawer}
-            style={[commonStyles.row, {
-              gap: 4,
-              backgroundColor: theme.colors.surfaceVariant,
-              paddingVertical: 4,
-              paddingHorizontal: 8,
-              borderRadius: 30,
-            }]}
+            style={[
+              commonStyles.row,
+              {
+                gap: 4,
+                backgroundColor: theme.colors.surfaceVariant,
+                paddingVertical: 4,
+                paddingHorizontal: 8,
+                borderRadius: 30,
+                marginRight: 8, // spacing from wifi icon
+              },
+            ]}
           >
-            <MaterialIcons name="sync-alt" size={14} color={theme.colors.onSurfaceVariant} />
-            <Text style={{ fontSize: 9, color: theme.colors.onSurfaceVariant }}>Change Device</Text>
+            <MaterialIcons
+              name="sync-alt"
+              size={14}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Text
+              style={{
+                fontSize: 9,
+                color: theme.colors.onSurfaceVariant,
+              }}
+            >
+              Change Device
+            </Text>
           </View>
 
           {/* Wifi Icon + SSID */}
-          <View style={[commonStyles.column, commonStyles.center, { minWidth: 40 }]}>
+          <View
+            style={[
+              commonStyles.column,
+              commonStyles.center,
+              { minWidth: 40, marginRight: 8 },
+            ]}
+          >
             <View onTouchEnd={handleWifiIconClick}>
-              <MaterialIcons name="wifi" size={20} color={theme.colors.onPrimary} />
+              <MaterialIcons
+                name="wifi"
+                size={20}
+                color={theme.colors.onPrimary}
+              />
             </View>
             <Text
-              style={{ fontSize: 8, color: theme.colors.onPrimary, maxWidth: 40, textAlign: "center" }}
+              style={{
+                fontSize: 8,
+                color: theme.colors.onPrimary,
+                maxWidth: 40,
+                textAlign: "center",
+              }}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               test wifi
             </Text>
           </View>
-        </View>
+        </Appbar.Header>
       ),
     });
-  }, [navigation,theme]);
+  }, [navigation, theme]);
 
   return (
     <SafeAreaView style={[commonStyles.container, {backgroundColor:theme.colors.surface}]}>
