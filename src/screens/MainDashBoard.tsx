@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import BrightnessSlider from "../components/BrightnessSlider";
 import EffectTileContainer from "../components/EffectsContainer/EffectsContainer";
 import InputSourceDashBoard from "../components/InputSourceDashBoard";
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback } from "react";
 import { Button, SafeAreaView, ScrollView, TouchableOpacity, View, Text, Dimensions } from "react-native";
 import CustomColorPicker from "../components/CustomColorPicker/CustomColorPicker";
 import { commonStyles } from "../styles/common";
@@ -15,7 +15,9 @@ import CommonModal from '../components/CommonModal';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
 import { RootStackParamList } from '../navigation';
-import { useTheme } from "react-native-paper";
+import { useTheme, Appbar } from "react-native-paper";
+import { useSysApi } from '../api/sysApi';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 
@@ -23,10 +25,16 @@ const MainDashBoard = ({ navigation }: Props) => {
   const [hasCleared, setHasCleared] = useState<boolean>(false);
   const [isChangeDeviceDrawerOpen, setIsChangeDeviceDrawerOpen] = useState(false);
   const [isDeviceNameUpdating, setDeviceNameUpdating] = useState(false);
+  const [mac, setMac] = useState<string|undefined>(undefined);
+
   const theme = useTheme(); // Paper theme
+  const { getMac } = useSysApi();
 
   const handleWifiIconClick = () => {
-    console.log("handleWifiIconClick >>>>");
+    console.log("handleWifiIconClick >>>>", mac);
+    if(mac){
+      navigation.navigate("WifiScanner",{deviceId: mac, isBluetoothConnected: false})
+    }    
   }
 
   const openDrawer = () => {
@@ -37,7 +45,7 @@ const MainDashBoard = ({ navigation }: Props) => {
     if (!isDeviceNameUpdating) {
       setIsChangeDeviceDrawerOpen(false);
     }
-  };
+  };  
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -76,7 +84,26 @@ const MainDashBoard = ({ navigation }: Props) => {
         </View>
       ),
     });
-  }, [navigation,theme]);
+  }, [navigation, theme, mac]);
+
+  useEffect(()=>{
+    console.log({mac});
+
+  },[mac])
+
+  useFocusEffect(
+      useCallback(() => {
+
+        const fetchDeviceMac = async () => {
+          const res = await getMac();
+          console.log("fetchDeviceMac >>>",res);
+          if (res.mac) {
+            setMac(res.mac.toUpperCase());
+          }
+        }
+        fetchDeviceMac();
+      }, [])
+    );
 
   return (
     <SafeAreaView style={[commonStyles.container, {backgroundColor:theme.colors.surface}]}>

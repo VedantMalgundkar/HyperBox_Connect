@@ -19,7 +19,7 @@ const WifiScanner = () => {
   const route = useRoute<WifiScannerRouteProp>();
   const theme = useTheme();
 
-  const { deviceId } = route.params;
+  const { deviceId, isBluetoothConnected } = route.params;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -43,7 +43,7 @@ const WifiScanner = () => {
     <View style={commonStyles.container}>
       <WifiListWidget
         deviceId={deviceId}
-        isFetchApi={false}
+        isBluetoothConnected={isBluetoothConnected}
       />
     </View>
   );

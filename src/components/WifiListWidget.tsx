@@ -9,6 +9,7 @@ import {
   Alert,
   StyleSheet,
   // TextInput,
+  Linking,
 } from 'react-native';
 import {MaterialIcons} from '@react-native-vector-icons/material-icons';
 import CommonModal from './CommonModal';
@@ -24,10 +25,15 @@ import {useTheme, ProgressBar, TextInput, Button} from 'react-native-paper';
 import { useToast } from '../api/ToastProvider';
 import { commonStyles } from '../styles/common';
 import { WifiCredsDialog } from './WifiCredsDialog';
+import { connectToDevice, disconnect } from '../services/bleService';
+import { storeRecentDevice } from '../services/storage/regularStorage';
+import { reqBluetooth, reqBluetoothPerms } from '../utils/permissions';
+import { CommonDialog } from './CommonDialog';
+import { useSysApi } from '../api/sysApi';
 
 type Props = {
   deviceId: string;
-  isFetchApi: boolean;
+  isBluetoothConnected: boolean;
 };
 
 interface bleResponse {
@@ -40,13 +46,13 @@ interface WifiNetworkWithId extends WifiNetwork {
   id: string;
 }
 
-const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
+const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
   const [wifiList, setWifiList] = useState<WifiNetworkWithId[]>([]);
 
   const [refreshing, setRefreshing] = useState(false);
   const [wifiLoading, setWifiLoading] = useState<boolean>(false);
 
-  const {bleDevice} = useConnection();
+  const {bleDevice, handleConnect, handleDisconnect} = useConnection();
   const showToast = useToast();
 
   console.log('WifiListWidget bleDeviceId >>', bleDevice?.id);
@@ -56,43 +62,122 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
 
   const [menuForWifi, setMenuForWifi] = useState<WifiNetwork | undefined>(undefined);
 
+  const [isPermissionPopUpOpen, setIsPermissionPopUpOpen] = useState<boolean>(false);
+  const [isBluetoothPopupOpen, setIsBluetoothPopupOpen] = useState<boolean>(false);
+
   const {bleManager} = useConnection();
   const theme = useTheme();
+  const { scanNearbyNetworks } = useSysApi();
 
   const menuOptions = [
     ...(menuForWifi?.u === 1 ? ['Disconnect'] : ['Connect']),
     ...(menuForWifi?.sav === 1 ? ['Forget'] : []),
     ];
+  
+  const connectBleDevice = async (deviceId: string) => {
+    if (!bleManager || !deviceId) return;
+    try {
+      // console.log("Connecting to", deviceId);
+      // console.log("bleManager >>>>",bleManager);
+      const connectedDevice = await connectToDevice(bleManager, deviceId);
+      console.log("connected to >>>>>", connectedDevice.id);
+      await connectedDevice.discoverAllServicesAndCharacteristics();
+      handleConnect(connectedDevice);
+      storeRecentDevice(connectedDevice);
+    } catch (error) {
+      console.error("wif Ble Connection error:", error);
+    }
+  };
 
-  useEffect(() => {
-    const init = async () => {
-      setWifiLoading(true);
-      try {
-        if (isFetchApi) {
-          console.log('Connect BLE device: ', deviceId);
-        } else {
-          console.log('Fetch MAC id for BLE...');
-        }
-      } catch (e) {
-        console.warn('BLE/API init failed:', e);
-      } finally {
-        setWifiLoading(false);
+  const disConnectBleDevice = async (bleDeviceId: string) => {
+    console.log("in disConnectBleDevice >>");
+    if (!bleManager) return;
+    console.log("found bleManager >>>", bleManager);
+    console.log("ble deviceId >>>", bleDeviceId);
+    try {
+      if (bleDevice?.id) {
+        await disconnect(bleManager, bleDeviceId);
+        console.log("disconnected >>>");
+        handleDisconnect();
       }
+    } catch (error) {
+      console.error("Disconnection error:", error);
+    }
+  };
+
+  const handleInputDeviceIdConnect = async (
+      deviceId: string,
+    ): Promise<boolean> => {
+  
+    const bluetoothPower = await reqBluetooth(bleManager,()=>setIsBluetoothPopupOpen(true));
+    if(!bluetoothPower) {
+      return false;
+    }
+
+    const permRes = await reqBluetoothPerms(()=>setIsPermissionPopUpOpen(true));
+
+    if (permRes !== "granted") {
+      console.log("permission response >>", permRes);
+      return false;
+    }
+
+    await connectBleDevice(deviceId.trim());
+    return true;
+  };
+
+  const responseListener = () => {
+    const handleRecievedData = (data: bleResponse) => {
+      console.log('data received from ble >>', data);
+      
+      if(data.status.toLowerCase().endsWith("ing")){
+        setWifiLoading(true);
+      }
+      
+      if (data.status === 'success') {
+        setWifiLoading(false);
+        loadWifiList();
+      } else {
+        if(data?.message) {
+          showToast({ message: data.message, duration: 3000 });
+        }
+      }
+
     };
-    init();
-    loadWifiList();
-  }, []);
+
+    const handleError = (error: Error) => {
+      console.log('error recieved from ble >>', error);
+    };
+
+    try {
+      const subs = listenWifiStatus(
+        bleManager,
+        deviceId,
+        handleRecievedData,
+        handleError,
+      );
+  
+      return subs;
+
+    } catch(error:any) {
+      console.log("listenWifiStatus error >>",error.message);
+    }
+
+  };
 
   const loadWifiList = useCallback(async () => {
     setWifiLoading(true);
     try {
       let result: WifiNetwork[] = [];
-      if (isFetchApi) {
-        console.log('Fetching via API...');
-      } else {
         console.log('Fetching via BLE...');
 
-        result = await discoverAndReadWifi(bleManager, deviceId);
+        if(isBluetoothConnected) {
+          result = await discoverAndReadWifi(bleManager, deviceId);
+        } else {
+          const resp = await scanNearbyNetworks();
+          console.log("scanNearbyNetworks >>>",resp)
+          result = resp.networks;
+        }
+
 //         result = [
 //   {
 //     s: "Home_Wifi",
@@ -133,7 +218,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
 
       
         console.log('ble res >>>>', result);
-      }
+      
 
       // setConnectedWifi(result.filter((e) => e.u === 1));
       // setSavedWifi(result.filter((e) => e.sav === 1 && e.u !== 1));
@@ -151,8 +236,43 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
       setWifiLoading(false);
       setRefreshing(false);
     }
-  }, [isFetchApi, deviceId]);
+  }, [isBluetoothConnected, deviceId]);
 
+  useEffect(() => {
+    let subscription: { remove: () => void } | undefined;
+
+    // Load Wi-Fi list immediately, no need to wait for BLE init
+    loadWifiList();
+
+    const init = async () => {
+      setWifiLoading(true);
+      try {
+        if (!isBluetoothConnected) {
+          console.log("Connect BLE device: ", deviceId);
+          await handleInputDeviceIdConnect(deviceId);
+        }
+        // ✅ only start subscription after BLE init
+        subscription = responseListener();
+      } catch (e) {
+        console.warn("BLE init failed:", e);
+      } finally {
+        setWifiLoading(false);
+      }
+    };
+
+    init();
+
+    return () => {
+      if (!isBluetoothConnected) {
+        const disconnectBle = async () => await disConnectBleDevice(deviceId);
+        disconnectBle();
+      }
+      subscription?.remove();
+      console.log("BLE listener removed");
+    };
+  }, [bleManager, deviceId, bleDevice?.id]);
+
+  
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadWifiList();
@@ -257,7 +377,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
             )}
           </View>
           {(isSaved || isConnected) && (
-            <TouchableOpacity onPress={() => showWifiMenu(wifi)}>
+            <TouchableOpacity onPress={() => showWifiMenu(wifi)} disabled={wifiLoading}>
               <MaterialIcons
                 name="more-vert"
                 size={22}
@@ -269,56 +389,6 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
       </TouchableOpacity>
     );
   };
-
-  const responseListener = () => {
-    const handleRecievedData = (data: bleResponse) => {
-      console.log('data received from ble >>', data);
-      
-      if(data.status.toLowerCase().endsWith("ing")){
-        setWifiLoading(true);
-      }
-      
-      if (data.status === 'success') {
-        setWifiLoading(false);
-        loadWifiList();
-      } else {
-        if(data?.message) {
-          showToast({ message: data.message, duration: 3000 });
-        }
-      }
-
-    };
-
-    const handleError = (error: Error) => {
-      console.log('error recieved from ble >>', error);
-    };
-
-    try {
-      const subs = listenWifiStatus(
-        bleManager,
-        deviceId,
-        handleRecievedData,
-        handleError,
-      );
-  
-      return subs;
-
-    } catch(error:any) {
-      console.log("listenWifiStatus error >>",error.message);
-    }
-
-  };
-
-  useEffect(() => {
-    // Start listening
-    const subscription = responseListener();
-
-    // Cleanup on unmount
-    return () => {
-      subscription?.remove();
-      console.log('BLE listener removed');
-    };
-  }, [bleManager, deviceId]);
 
   return (
     <View style={{flex: 1, position: "relative"}}>
@@ -363,7 +433,28 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isFetchApi}) => {
         ssid={selectedSsid}
         onDismiss={resetStates}
         deviceId={deviceId}
-        />        
+        />
+
+        <CommonDialog
+          visible = {isBluetoothPopupOpen}
+          onDismiss = {()=>setIsBluetoothPopupOpen(false)}
+          title = "Bluetooth required"
+          bodyText = "Please turn on Bluetooth to connect to device."
+          okText = "Ok"
+          onOk= {()=>setIsBluetoothPopupOpen(false)}
+          showCancel = {false}
+        />
+  
+        <CommonDialog
+          visible = {isPermissionPopUpOpen}
+          onDismiss = {()=>setIsPermissionPopUpOpen(false)}
+          title = "Permission required"
+          bodyText = "Please enable Nearby Devices and Location permissions in Settings."
+          okText = "Open Settings"
+          onOk= {()=>Linking.openSettings()}
+          cancelText = "Cancel"
+        />
+
 
         <CommonModal
           isVisible={!!menuForWifi}

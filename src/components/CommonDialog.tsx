@@ -17,6 +17,7 @@ type CommonDialogProps = {
 
     cancelText?: string;
     onCancel?: () => void;
+    showCancel?: boolean;
 };
 
 export const CommonDialog: React.FC<CommonDialogProps> = ({
@@ -28,7 +29,8 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
     children,
     okText = "OK",
     onOk,
-    cancelText = "Cancel"
+    cancelText = "Cancel",
+    showCancel = true
 }) => {
     return (
         <Portal>
@@ -46,7 +48,11 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
                 </Dialog.Content>
 
                 <Dialog.Actions>
-                    <Button onPress={onDismiss}>{cancelText}</Button>
+                    {
+                        showCancel && (
+                            <Button onPress={onDismiss}>{cancelText}</Button>
+                        )
+                    }
                     {onOk && (
                         <Button onPress={onOk}>{okText}</Button>
                     )}
@@ -62,7 +68,7 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     body: {
-        marginTop: 4,
-        marginBottom: 12,
+        // marginTop: 4,
+        // marginBottom: 12,
     },
 });

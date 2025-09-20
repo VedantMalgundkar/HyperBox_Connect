@@ -35,6 +35,7 @@ export default function MdnsScanner() {
             icon="plus"
             color={theme.colors.onPrimary}
             onPress={() => navigation.navigate("BleScanner")}
+            // onPress={() => navigation.navigate("MainDashBoard")}
           />
         </Appbar.Header>
       ),

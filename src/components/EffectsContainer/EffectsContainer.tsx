@@ -5,6 +5,7 @@ import { useLedApi } from '../../api/ledApi';
 import EffectsTile from './EffectsTile';
 import { commonStyles } from "../../styles/common";
 import { useTheme } from "react-native-paper";
+import { isEmptyObject } from "../../utils/helper";
 
 type Effect = {
     name: string;
@@ -22,15 +23,21 @@ export default function EffectTileContainer({ hasCleared }: EffectTileContainerP
     const {applyEffect, getCurrentActiveInput, getLedEffects, stopEffect} = useLedApi();
 
     const fetchCurrentInputSource = async () => {
-        try {
-            const res = await getCurrentActiveInput();
-            if (res.data.componentId.toLowerCase().includes('effect')) {
-                const effect = res.data.value;
-                setActiveEffect({ name: effect });
-            }
-        } catch (error: any) {
-            console.log(error);
+    try {
+        const res = await getCurrentActiveInput();
+        console.log("fetchCurrentInputSource >>>", res);
+
+        if (!res?.data || isEmptyObject(res.data)) {
+        console.log("⚠️ No data available");
+        return;
         }
+
+        if (res.data?.componentId?.toLowerCase().includes("effect")) {
+        setActiveEffect({ name: res.data.value });
+        }
+    } catch (error: any) {
+        console.log("❌ fetchCurrentInputSource error:", error);
+    }
     };
 
     const fetchLedEffects = async () => {

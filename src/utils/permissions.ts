@@ -1,5 +1,6 @@
 
 import {Permission, PermissionsAndroid, Linking, Alert} from "react-native";
+import { BleManager, State } from "react-native-ble-plx";
 
 const requestPermissions = async (
     permissions: Permission[]
@@ -33,28 +34,37 @@ export const showPermissionPopup = (
     Alert.alert(title, message, buttons)
     }
 
-export const handlePermissions = async (permissions: Permission[]): Promise<boolean> => {
+export const handlePermissions = async (permissions: Permission[]) => {
     const status = await requestPermissions(permissions);
-
-    console.log({ status });
-
-    if (status === "granted") {
-        console.log("✅ All permissions granted");
-        return true;
-    } else if (status === "denied") {
-        console.log("❌ Permissions denied, can try again later");
-        return false;
-    } else if (status === "blocked") {
-        showPermissionPopup(
-            "Permission required",
-            "Please enable Bluetooth and Location permissions in Settings.",
-            () => Linking.openSettings(),
-            "Open Settings"
-        )
-        return false;
-    }
-
-    return false;
+    return status;
 };
+
+export const checkBluetooth = async (bleManager: BleManager) => {
+    const state = await bleManager.state();
+    return state == State.PoweredOn 
+}
+
+export const reqBluetooth = async (bleManager: BleManager, handleBluetoothOff: () => void) => {
+    const bluPowerRes = await checkBluetooth(bleManager);
+    if(!bluPowerRes) {
+        handleBluetoothOff();
+    }
+    return bluPowerRes
+}
+
+export const reqBluetoothPerms = async (handlePermissionBlocked:() => void) => {
+    const requiredPermissions = [
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+    ];
+
+    const permissionRes = await handlePermissions(requiredPermissions);
+    if(permissionRes == "blocked") {
+        handlePermissionBlocked();
+    }
+    return permissionRes;
+}
+
 
 export const fakeApi = (ms = 1500) => new Promise(res => setTimeout(res, ms));

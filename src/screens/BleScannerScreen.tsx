@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Linking,
 } from "react-native";
 import { Device, State } from "react-native-ble-plx";
 import { commonStyles } from "../styles/common";
@@ -24,12 +25,12 @@ import { connectToDevice, disconnect } from "../services/bleService";
 import { storeRecentDevice, getRecentDevices } from "../services/storage/regularStorage";
 import Toast from "react-native-toast-message";
 import { useTheme, Button, TextInput } from "react-native-paper";
-import { handlePermissions } from "../utils/permissions";
+import { reqBluetooth, reqBluetoothPerms } from "../utils/permissions";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view"
 import BleDeviceTile from "../components/BleDeviceTile";
 import { Appbar } from "react-native-paper";
 import { useToast } from "../api/ToastProvider";
-
+import { CommonDialog } from "../components/CommonDialog";
 
 type BleScannerNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -102,73 +103,18 @@ const BLEScanner = () => {
   const [whichDeviceIsConnecting, setWhichDeviceIsConnecting] = useState<string|null>(null);
   const theme = useTheme();
   const showToast = useToast();
+  const [isPermissionPopUpOpen, setIsPermissionPopUpOpen] = useState<boolean>(false);
+  const [isBluetoothPopupOpen, setIsBluetoothPopupOpen] = useState<boolean>(false);
+  const [isCameraPermissionPopupOpen, setIsCameraPermissionPopupOpen] = useState<boolean>(false);
 
   const recentConectedDevices = getRecentDevices();
 
-  // const requestPermissions = async (
-  //   permissions: Permission[]
-  // ): Promise<"granted" | "denied" | "blocked"> => {
-
-  //   const result = await PermissionsAndroid.requestMultiple(permissions);
-  //   const values = Object.values(result);
-
-  //   if (values.every((v) => v === PermissionsAndroid.RESULTS.GRANTED)) {
-  //     return "granted";
-  //   }
-
-  //   if (values.some((v) => v === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN)) {
-  //     return "blocked"; // must go to settings
-  //   }
-
-  //   return "denied"; // denied, can ask again
-  // };
-
-  // const handlePermissions = async (permissions: Permission[]): Promise<boolean> => {
-  //   const status = await requestPermissions(permissions);
-
-  //   console.log({ status });
-
-  //   if (status === "granted") {
-  //     console.log("✅ All permissions granted");
-  //     return true;
-  //   } else if (status === "denied") {
-  //     console.log("❌ Permissions denied, can try again later");
-  //     return false;
-  //   } else if (status === "blocked") {
-  //     Alert.alert(
-  //       "Permission required",
-  //       "Please enable permissions in Settings.",
-  //       [
-  //         { text: "Cancel", style: "cancel" },
-  //         { text: "Open Settings", onPress: () => Linking.openSettings() },
-  //       ]
-  //     );
-  //     return false;
-  //   }
-
-  //   return false;
-  // };
-
-  const reqBluetooth = async () => {
-    const requiredPermissions = [
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-    ];
-
-    return await handlePermissions(requiredPermissions);
-  }
-
-  const reqCamera = async () => {
-    const requiredPermissions = [
-      PermissionsAndroid.PERMISSIONS.CAMERA,
-    ];
-
-    return await handlePermissions(requiredPermissions);
-  };
-
   useEffect(() => {
-    reqBluetooth();
+    const askBluetoothPermissions = async () => {
+      await reqBluetoothPerms(()=>setIsPermissionPopUpOpen(true));
+    }
+
+    askBluetoothPermissions()
   }, []);
 
   useLayoutEffect(() => {
@@ -191,46 +137,14 @@ const BLEScanner = () => {
     });
   }, [navigation, theme]);
 
-  // const startScan = async () => {
-  //   console.log("scan started >>>>");
-  //   if (!bleManager) return;
-
-  //   const permRes = await reqBluetooth();
-
-  //   if (!permRes) {
-  //     console.log("permission response >>",permRes);
-  //     return;
-  //   }
-
-  //   setDevices({});
-  //   setScanning(true);
-
-  //   bleManager.startDeviceScan(null, null, (error, device) => {
-  //     if (error) {
-  //       console.log("Scan error:", error);
-  //       setScanning(false);
-  //       return;
-  //     }
-
-  //     if (device && device.name) {
-  //       setDevices((prev) => ({ ...prev, [device.id]: device }));
-  //     }
-  //   });
-
-  //   setTimeout(() => {
-  //     bleManager.stopDeviceScan();
-  //     setScanning(false);
-  //   }, 10000);
-  // };
-
   const handleRedirect = () => {
     if (bleDevice?.id) {
-      navigation.navigate('WifiScanner', { deviceId: bleDevice.id });
+      navigation.navigate('WifiScanner', { deviceId: bleDevice.id, isBluetoothConnected: !!bleDevice?.id});
     }
   }
   
   const fakeRedirect = () => {
-    navigation.navigate('WifiScanner', { deviceId: "hiii" });
+    navigation.navigate('WifiScanner', { deviceId: "hiii", isBluetoothConnected: false });
   }
 
   useEffect(() => {
@@ -265,20 +179,15 @@ const BLEScanner = () => {
   const handleInputDeviceIdConnect = async (
     deviceId: string,
   ): Promise<boolean> => {
-    const state = await bleManager.state();
 
-    if (state !== State.PoweredOn) {
-      console.log("❌ Bluetooth is off");
-      Alert.alert(
-        "Bluetooth Required",
-        "Please turn on Bluetooth to connect to device."
-      );
+    const bluetoothPower = await reqBluetooth(bleManager,()=>setIsBluetoothPopupOpen(true));
+    if(!bluetoothPower) {
       return false;
     }
 
-    const permRes = await reqBluetooth();
+    const permRes = await reqBluetoothPerms(()=>setIsPermissionPopUpOpen(true));
 
-    if (!permRes) {
+    if (permRes !== "granted") {
       console.log("permission response >>", permRes);
       return false;
     }
@@ -349,7 +258,8 @@ const BLEScanner = () => {
         <QrScanner onScanned={async (value) => {
           console.log("qr scanned >>>", value)
           return await handleInputDeviceIdConnect(value)
-        }} />
+        }} 
+        onCameraPermissionDenied={(shouldOpen)=>setIsCameraPermissionPopupOpen(shouldOpen)}/>
       </View>
 
       {/* <View style={{ gap: 12 }}> */}
@@ -370,14 +280,14 @@ const BLEScanner = () => {
         Connect
       </Button>
       
-      {/* <Button
+      <Button
         mode="contained"
         onPress={fakeRedirect}
         loading={!!whichDeviceIsConnecting}
         disabled={!!whichDeviceIsConnecting}
       >
         redirect
-      </Button> */}
+      </Button>
       {/* </View> */}
 
       {
@@ -392,6 +302,36 @@ const BLEScanner = () => {
           ))}
         </>
       }
+
+      <CommonDialog
+        visible = {isBluetoothPopupOpen}
+        onDismiss = {()=>setIsBluetoothPopupOpen(false)}
+        title = "Bluetooth required"
+        bodyText = "Please turn on Bluetooth to connect to device."
+        okText = "Ok"
+        onOk= {()=>setIsBluetoothPopupOpen(false)}
+        showCancel = {false}
+      />
+
+      <CommonDialog
+        visible = {isCameraPermissionPopupOpen}
+        onDismiss = {()=>setIsCameraPermissionPopupOpen(false)}
+        title = "Permission required"
+        bodyText = "Please enable camera permission in Settings."
+        okText = "Open Settings"
+        onOk= {()=>Linking.openSettings()}
+        cancelText = "Cancel"
+      />
+
+      <CommonDialog
+        visible = {isPermissionPopUpOpen}
+        onDismiss = {()=>setIsPermissionPopUpOpen(false)}
+        title = "Permission required"
+        bodyText = "Please enable Nearby Devices and Location permissions in Settings."
+        okText = "Open Settings"
+        onOk= {()=>Linking.openSettings()}
+        cancelText = "Cancel"
+      />
     </KeyboardAwareScrollView>
   );
 };

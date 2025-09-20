@@ -14,9 +14,10 @@ import { useTheme } from "react-native-paper"
 
 type Props = {
   onScanned: (value: string) => Promise<boolean>;
+  onCameraPermissionDenied: (isCameraPermissionModalVisible: boolean) => void;
 };
 
-export default function QrScanner({ onScanned }: Props): React.ReactElement {
+export default function QrScanner({ onScanned, onCameraPermissionDenied }: Props): React.ReactElement {
   const { hasPermission, requestPermission } = useCameraPermission()
   const device = useCameraDevice("back")
   const isFocused = useIsFocused()
@@ -25,7 +26,6 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
   const [torch, setTorch] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const theme = useTheme();
-
 
   const closeCamera = ()=>{
     setShowCamera(false)
@@ -74,7 +74,7 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
   // If permission denied → show fallback UI
   if (!hasPermission) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+      <View style={[styles.container, { backgroundColor:theme.colors.surfaceVariant }, { justifyContent: "center", alignItems: "center", paddingTop: 8 }]}>
         <TouchableOpacity
           onPress={async () => {
             console.log("ran cam off >>>")
@@ -82,13 +82,7 @@ export default function QrScanner({ onScanned }: Props): React.ReactElement {
             if (granted) {
               setShowCamera(true)
             } else {
-              // show popup instead of opening settings directly
-              showPermissionPopup(
-                "Permission required",
-                "Please enable camera permission in Settings.",
-                () => Linking.openSettings(),
-                "Open Settings"
-              )
+              onCameraPermissionDenied(true);
             }
           }}
         >

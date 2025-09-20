@@ -12,7 +12,7 @@ export type RootStackParamList = {
   MainDashBoard: undefined; // or { someParam: string } if you want to pass params
   BleScanner:undefined;
   codeScanner:undefined;
-  WifiScanner: { deviceId: string };
+  WifiScanner: { deviceId: string, isBluetoothConnected: boolean };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

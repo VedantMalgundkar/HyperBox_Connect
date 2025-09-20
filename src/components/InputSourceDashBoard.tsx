@@ -4,6 +4,7 @@ import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-
 import { useLedApi } from '../api/ledApi';
 import { commonStyles, theme } from '../styles/common';
 import { useConnection } from "../api/ConnectionContext";
+import { isEmptyObject } from '../utils/helper';
 
 import { useTheme } from 'react-native-paper';
 
@@ -309,6 +310,11 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
     try {
       setLoading(true);
       const res = await getCurrentActiveInput();
+
+      if (!res?.data || isEmptyObject(res.data)) {
+        console.log("⚠️ No data available");
+        return;
+      }
       const priority: Priority = res.data
       if (!priority?.isFallBack) {
         setCurrentInput(priority);
