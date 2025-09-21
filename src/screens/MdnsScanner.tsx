@@ -1,5 +1,5 @@
 import React, { useLayoutEffect } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useNavigation, useTheme as useNavTheme } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation";
@@ -7,6 +7,7 @@ import HyperhdrScannerContent from "../components/HyperhdrScannerContent";
 
 // Paper components
 import { useTheme, Appbar } from "react-native-paper";
+import { NetworkDiagram } from "../components/NetworkDiagram";
 
 // ✅ Type the navigation hook
 type MdnsScannerNavigationProp = NativeStackNavigationProp<
@@ -44,13 +45,16 @@ export default function MdnsScanner() {
 
   return (
     // Content area
-    <HyperhdrScannerContent onConnect={handleOpen} />
+    // <HyperhdrScannerContent onConnect={handleOpen} />
+    <View style={styles.container}>
+      <NetworkDiagram />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 15,
+    paddingHorizontal: 30,
   },
 });
