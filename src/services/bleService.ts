@@ -154,7 +154,7 @@ export function listenWifiStatus(
           return;
         }
 
-        console.error("Monitor error:", error);
+        // console.error("Monitor error:", error);
         onError?.(error);
         return;
       }

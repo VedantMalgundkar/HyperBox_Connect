@@ -21,6 +21,10 @@ const WifiScanner = () => {
 
   const { deviceId, isBluetoothConnected } = route.params;
 
+  const handleGoback = () => {
+    navigation.goBack();
+  }
+
   useLayoutEffect(() => {
     navigation.setOptions({
       header: () => (
@@ -44,6 +48,7 @@ const WifiScanner = () => {
       <WifiListWidget
         deviceId={deviceId}
         isBluetoothConnected={isBluetoothConnected}
+        onBluetoothOff={handleGoback}
       />
     </View>
   );
