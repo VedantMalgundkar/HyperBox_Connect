@@ -27,7 +27,7 @@ import { commonStyles } from '../styles/common';
 import { WifiCredsDialog } from './WifiCredsDialog';
 import { connectToDevice, disconnect } from '../services/bleService';
 import { storeRecentDevice } from '../services/storage/regularStorage';
-import { reqBluetooth, reqBluetoothPerms } from '../utils/permissions';
+import { fakeApi, reqBluetooth, reqBluetoothPerms } from '../utils/permissions';
 import { CommonDialog } from './CommonDialog';
 import { useSysApi } from '../api/sysApi';
 
@@ -51,11 +51,15 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [wifiLoading, setWifiLoading] = useState<boolean>(false);
+  const [wifiNotifyLoading, setWifiNotifyLoading] = useState<boolean>(false);
+  const [initLoading, setInitLoading] = useState<boolean>(false);
 
   const {bleDevice, handleConnect, handleDisconnect} = useConnection();
   const showToast = useToast();
 
   console.log('WifiListWidget bleDeviceId >>', bleDevice?.id);
+
+  const isOverAllLoaing = wifiLoading || wifiNotifyLoading || initLoading;
 
   // 🔑 For modal
   const [selectedSsid, setSelectedSsid] = useState<string | undefined>(undefined);
@@ -130,11 +134,11 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
       console.log('data received from ble >>', data);
       
       if(data.status.toLowerCase().endsWith("ing")){
-        setWifiLoading(true);
+        setWifiNotifyLoading(true);
       }
       
       if (data.status === 'success') {
-        setWifiLoading(false);
+        setWifiNotifyLoading(false);
         loadWifiList();
       } else {
         if(data?.message) {
@@ -168,11 +172,12 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
     setWifiLoading(true);
     try {
       let result: WifiNetwork[] = [];
-        console.log('Fetching via BLE...');
-
-        if(isBluetoothConnected) {
-          result = await discoverAndReadWifi(bleManager, deviceId);
-        } else {
+      
+      if(isBluetoothConnected) {
+        console.log('Fetching wifilist via BLE...');
+        result = await discoverAndReadWifi(bleManager, deviceId);
+      } else {
+          console.log('Fetching wifilist via API...');
           const resp = await scanNearbyNetworks();
           console.log("scanNearbyNetworks >>>",resp)
           result = resp.networks;
@@ -239,24 +244,27 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
   }, [isBluetoothConnected, deviceId]);
 
   useEffect(() => {
-    let subscription: { remove: () => void } | undefined;
 
     // Load Wi-Fi list immediately, no need to wait for BLE init
     loadWifiList();
 
     const init = async () => {
-      setWifiLoading(true);
+      console.log("before init bleDevice?.id >>>",bleDevice?.id);
+      if(bleDevice?.id){
+        console.log("Already connected >>>>");
+        return; 
+      }
+      setInitLoading(true);
       try {
         if (!isBluetoothConnected) {
           console.log("Connect BLE device: ", deviceId);
+          // await fakeApi(5000);
           await handleInputDeviceIdConnect(deviceId);
         }
-        // ✅ only start subscription after BLE init
-        subscription = responseListener();
       } catch (e) {
         console.warn("BLE init failed:", e);
       } finally {
-        setWifiLoading(false);
+        setInitLoading(false);
       }
     };
 
@@ -267,10 +275,23 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
         const disconnectBle = async () => await disConnectBleDevice(deviceId);
         disconnectBle();
       }
-      subscription?.remove();
-      console.log("BLE listener removed");
     };
   }, [bleManager, deviceId, bleDevice?.id]);
+
+  useEffect(()=> {
+    if(!bleDevice?.id){
+      console.log("cannot subscribe bleDevice?.id >>>>",bleDevice?.id);
+      return;
+    }
+    const subscription = responseListener();
+    console.log("subscription applied >>>>>>",subscription);
+
+    return () => {
+      console.log({subscription});
+      subscription?.remove();
+      console.log("BLE listener removed");
+    }
+  },[bleDevice?.id])
 
   
   const onRefresh = useCallback(() => {
@@ -342,10 +363,17 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
         style={styles.tile}
         onPress={() => {
           if (isConnected) return;
-          if (isSaved || !locked) {
-            handleWifiAction(ssid, 'connect');
-          } else {
+          
+          if (!isSaved) {
+            console.log("wifi dialog >>>");
             setSelectedSsid(ssid);
+            return;
+          }
+
+          if (isSaved && !isOverAllLoaing) {
+            console.log({isSaved, isOverAllLoaing});
+            handleWifiAction(ssid, 'connect');
+            return;
           }
         }}>
         <View style={styles.row}>
@@ -377,11 +405,11 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
             )}
           </View>
           {(isSaved || isConnected) && (
-            <TouchableOpacity onPress={() => showWifiMenu(wifi)} disabled={wifiLoading}>
+            <TouchableOpacity onPress={() => showWifiMenu(wifi)} disabled={isOverAllLoaing}>
               <MaterialIcons
                 name="more-vert"
                 size={22}
-                color={theme.colors.onSurface}
+                color={isOverAllLoaing ? 'grey' : theme.colors.onSurface}
               />
             </TouchableOpacity>
           )}
@@ -392,7 +420,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
 
   return (
     <View style={{flex: 1, position: "relative"}}>
-      { wifiLoading && (
+      { isOverAllLoaing && (
         <ProgressBar
           indeterminate
           color={theme.colors.primary}
@@ -429,6 +457,7 @@ const WifiListWidget: React.FC<Props> = ({deviceId, isBluetoothConnected}) => {
         )}
 
        <WifiCredsDialog
+        isLoading={isOverAllLoaing}
         visible={!!selectedSsid}
         ssid={selectedSsid}
         onDismiss={resetStates}

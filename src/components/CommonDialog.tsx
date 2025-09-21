@@ -18,6 +18,8 @@ type CommonDialogProps = {
     cancelText?: string;
     onCancel?: () => void;
     showCancel?: boolean;
+
+    loading?: boolean;
 };
 
 export const CommonDialog: React.FC<CommonDialogProps> = ({
@@ -30,7 +32,8 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
     okText = "OK",
     onOk,
     cancelText = "Cancel",
-    showCancel = true
+    showCancel = true,
+    loading = false,
 }) => {
     return (
         <Portal>
@@ -54,7 +57,7 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
                         )
                     }
                     {onOk && (
-                        <Button onPress={onOk}>{okText}</Button>
+                        <Button loading={loading} disabled={loading} onPress={onOk}>{okText}</Button>
                     )}
                 </Dialog.Actions>
             </Dialog>

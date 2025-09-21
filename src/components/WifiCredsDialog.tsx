@@ -5,6 +5,7 @@ import { writeCredentials } from "../services/bleService";
 import { useConnection } from "../api/ConnectionContext";
 
 type WifiCredsDialogProps = {
+  isLoading: boolean;
   visible: boolean;
   ssid?: string;
   onDismiss: () => void;
@@ -12,6 +13,7 @@ type WifiCredsDialogProps = {
 };
 
 export const WifiCredsDialog: React.FC<WifiCredsDialogProps> = ({
+  isLoading,
   visible,
   ssid,
   onDismiss,
@@ -44,6 +46,7 @@ export const WifiCredsDialog: React.FC<WifiCredsDialogProps> = ({
           handleWifiWriteCredentials(ssid, password);
         }
       }}
+      loading={isLoading}
     >
       <TextInput
         mode="flat"
