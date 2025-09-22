@@ -25,7 +25,7 @@ export const NetworkDiagram: React.FC<NetworkDiagramProps> = ({
     };
 
     // Calculate positions based on actual container dimensions
-    const routerX = containerDimensions.width / 2; // Router position (center)
+    const routerX = (containerDimensions.width+30) / 2; // Router position (center)
     const tvX = size; // TV position (left edge + half icon size)
     const phoneX = containerDimensions.width - size +10; // Phone position (right edge - half icon size)
     const setTopBoxX = containerDimensions.width / 2; // Set-top box position (center, below router)
@@ -58,8 +58,8 @@ export const NetworkDiagram: React.FC<NetworkDiagramProps> = ({
                     <Line
                         x1={routerX}
                         y1={size / 1.5}
-                        x2={phoneX}
-                        y2={size / 2}
+                        x2={phoneX + 30}
+                        y2={(size) / 2}
                         stroke={theme.colors.onSurfaceVariant}
                         opacity={0.6}
                         strokeWidth={2}
@@ -69,8 +69,8 @@ export const NetworkDiagram: React.FC<NetworkDiagramProps> = ({
                     {/* Line from router to set-top box */}
                     <Line
                         x1={routerX}
-                        y1={size / 1.5}
-                        x2={setTopBoxX}
+                        y1={size / 1}
+                        x2={setTopBoxX+13}
                         y2={size + gap + size / 2.5}
                         stroke={theme.colors.onSurfaceVariant}
                         strokeWidth={2}
@@ -83,7 +83,7 @@ export const NetworkDiagram: React.FC<NetworkDiagramProps> = ({
             <View style={[commonStyles.row, {justifyContent:"space-between", alignItems:"center"}]}>
                 <MaterialIcons name="tv" color={theme.colors.onSurfaceVariant} size={size} />
                 <MaterialDesignIcons name="router-wireless" color={theme.colors.onSurfaceVariant} size={size} />
-                <MaterialIcons name={`phone-${whichDevice}`} color={theme.colors.onSurfaceVariant} size={size} />
+                <MaterialIcons name={`phone-${whichDevice}`} color={theme.colors.onSurfaceVariant} size={size-30} style={{margin:-5}}/>
             </View>
             <View style={[commonStyles.row, { justifyContent: "center" }]}>
                 <MaterialDesignIcons name="set-top-box" color={theme.colors.onSurfaceVariant} size={size} />

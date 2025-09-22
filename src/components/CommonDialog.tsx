@@ -6,7 +6,7 @@ type CommonDialogProps = {
     visible: boolean;
     onDismiss?: () => void;
 
-    title: string;
+    title?: string;
     subtitle?: string;
 
     bodyText?: string;
@@ -42,7 +42,11 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
                 shadowColor: "transparent",
             }}>
                 {/* Title */}
-                <Dialog.Title>{title}</Dialog.Title>
+                {
+                    title && (
+                        <Dialog.Title>{title}</Dialog.Title>
+                    )
+                }
 
                 <Dialog.Content>
                     {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
