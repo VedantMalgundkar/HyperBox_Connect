@@ -25,9 +25,9 @@ export const NetworkDiagram: React.FC<NetworkDiagramProps> = ({
     };
 
     // Calculate positions based on actual container dimensions
-    const routerX = (containerDimensions.width+30) / 2; // Router position (center)
+    const routerX = (containerDimensions.width+25) / 2; // Router position (center)
     const tvX = size; // TV position (left edge + half icon size)
-    const phoneX = containerDimensions.width - size +10; // Phone position (right edge - half icon size)
+    const phoneX = containerDimensions.width - size +8; // Phone position (right edge - half icon size)
     const setTopBoxX = containerDimensions.width / 2; // Set-top box position (center, below router)
 
     return (
@@ -58,7 +58,7 @@ export const NetworkDiagram: React.FC<NetworkDiagramProps> = ({
                     <Line
                         x1={routerX}
                         y1={size / 1.5}
-                        x2={phoneX + 30}
+                        x2={phoneX + 25}
                         y2={(size) / 2}
                         stroke={theme.colors.onSurfaceVariant}
                         opacity={0.6}
@@ -83,9 +83,9 @@ export const NetworkDiagram: React.FC<NetworkDiagramProps> = ({
             <View style={[commonStyles.row, {justifyContent:"space-between", alignItems:"center"}]}>
                 <MaterialIcons name="tv" color={theme.colors.onSurfaceVariant} size={size} />
                 <MaterialDesignIcons name="router-wireless" color={theme.colors.onSurfaceVariant} size={size} />
-                <MaterialIcons name={`phone-${whichDevice}`} color={theme.colors.onSurfaceVariant} size={size-30} style={{margin:-5}}/>
+                <MaterialIcons name={`phone-${whichDevice}`} color={theme.colors.onSurfaceVariant} size={size-25} style={{margin:-5}}/>
             </View>
-            <View style={[commonStyles.row, { justifyContent: "center" }]}>
+            <View style={[commonStyles.row, { justifyContent: "center",marginLeft:20 }]}>
                 <MaterialDesignIcons name="set-top-box" color={theme.colors.onSurfaceVariant} size={size} />
             </View>
         </View>

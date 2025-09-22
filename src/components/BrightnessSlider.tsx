@@ -5,25 +5,26 @@ import { commonStyles } from '../styles/common';
 import Toast from 'react-native-toast-message';
 import { useLedApi } from '../api/ledApi';
 import { useTheme, Text } from 'react-native-paper';
-import { Colors } from 'react-native/Libraries/NewAppScreen';
-
+import { useDialog } from '../api/NetWorkDialogContext';
 
 const BrightnessSlider = () => {
     const {adjustLedBrightness, getLedBrightness} = useLedApi();
     
     const [brightness, setBrightness] = useState(50);
     const theme = useTheme();
+    const { showErrorDialog } = useDialog();
 
     const handleBrightnessChange = async (value: number): Promise<void> => {
         try {
             await adjustLedBrightness(value);
         } catch (error: any) {
-            Toast.show({
-                type: 'error',           // success | error | info
-                text1: error.message ?? 'error in setting Brightness',
-                position: 'bottom',
-                visibilityTime: 2000,
-            });
+            showErrorDialog();
+            // Toast.show({
+            //     type: 'error',           // success | error | info
+            //     text1: error.message ?? 'error in setting Brightness',
+            //     position: 'bottom',
+            //     visibilityTime: 2000,
+            // });
         }
     };
 
@@ -32,12 +33,13 @@ const BrightnessSlider = () => {
             const res = await getLedBrightness()
             setBrightness(res.data.brightness)
         } catch(error:any) {
-            Toast.show({
-                type: 'error',           // success | error | info
-                text1: error.message ?? 'Error in fetching Brightness',
-                position: 'bottom',
-                visibilityTime: 2000,
-            });
+            showErrorDialog();
+            // Toast.show({
+            //     type: 'error',           // success | error | info
+            //     text1: error.message ?? 'Error in fetching Brightness',
+            //     position: 'bottom',
+            //     visibilityTime: 2000,
+            // });
         }
     }
 

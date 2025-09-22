@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, StyleProp, TextStyle } from "react-native";
 import { Button, Dialog, Portal, Text } from "react-native-paper";
 
 type CommonDialogProps = {
@@ -20,6 +20,8 @@ type CommonDialogProps = {
     showCancel?: boolean;
 
     loading?: boolean;
+    isChildrenFirstContent?: boolean;
+    bodyTextStyle?: StyleProp<TextStyle>; 
 };
 
 export const CommonDialog: React.FC<CommonDialogProps> = ({
@@ -34,6 +36,8 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
     cancelText = "Cancel",
     showCancel = true,
     loading = false,
+    isChildrenFirstContent = false,
+    bodyTextStyle
 }) => {
     return (
         <Portal>
@@ -49,9 +53,12 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
                 }
 
                 <Dialog.Content>
-                    {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-                    {bodyText ? <Text style={styles.body}>{bodyText}</Text> : null}
-                    {children}
+                {isChildrenFirstContent && children}
+
+                {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+                {bodyText ? <Text style={[styles.body, bodyTextStyle]}>{bodyText}</Text> : null}
+
+                {!isChildrenFirstContent && children}
                 </Dialog.Content>
 
                 <Dialog.Actions>

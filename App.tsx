@@ -20,6 +20,7 @@ import AppNavigator from "./src/navigation";
 import { lightTheme, darkTheme } from "./src/styles/theme";
 import { ConnectionProvider } from "./src/api/ConnectionContext";
 import { ToastProvider } from "./src/api/ToastProvider";
+import { NetworkDialogProvider } from "./src/api/NetWorkDialogContext";
 
 const { LightTheme: navLight, DarkTheme: navDark } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -53,7 +54,9 @@ export default function App() {
             <Portal.Host>
               <NavigationContainer theme={theme}>
                 <ToastProvider>
-                  <AppNavigator />
+                  <NetworkDialogProvider>
+                    <AppNavigator />
+                  </NetworkDialogProvider>
                 </ToastProvider>
               </NavigationContainer>
             </Portal.Host>

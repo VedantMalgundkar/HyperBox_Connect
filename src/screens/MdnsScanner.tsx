@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useNavigation, useTheme as useNavTheme } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation";
@@ -7,8 +7,7 @@ import HyperhdrScannerContent from "../components/HyperhdrScannerContent";
 
 // Paper components
 import { useTheme, Appbar, Button } from "react-native-paper";
-import { NetworkDiagram } from "../components/NetworkDiagram";
-import { CommonDialog } from "../components/CommonDialog";
+import { useDialog } from "../api/NetWorkDialogContext";
 
 // ✅ Type the navigation hook
 type MdnsScannerNavigationProp = NativeStackNavigationProp<
@@ -19,7 +18,7 @@ type MdnsScannerNavigationProp = NativeStackNavigationProp<
 export default function MdnsScanner() {
   const navigation = useNavigation<MdnsScannerNavigationProp>();
   const theme = useTheme(); // Paper theme
-  const [isErrorInfoDialogOpen, setIsErrorInfoDialogOpen] = useState<boolean>(true)
+  const { showErrorDialog } = useDialog();
 
   const handleOpen = () => {
     navigation.replace("MainDashBoard");
@@ -48,19 +47,9 @@ export default function MdnsScanner() {
   return (
     // Content area
     // <HyperhdrScannerContent onConnect={handleOpen} />
-    <View style={styles.container}>
-      <CommonDialog
-        visible={isErrorInfoDialogOpen}
-        onDismiss={() => setIsErrorInfoDialogOpen(false)}
-        okText="Ok"
-        onOk={() => setIsErrorInfoDialogOpen(false)}
-        showCancel={false}
-      >
-        <NetworkDiagram />
-      </CommonDialog>
-
-      <Button mode="contained" onPress={() => setIsErrorInfoDialogOpen(true)}>Show Dialog</Button>
-    // </View>
+    <>
+    <Button onPress={()=>handleOpen()}>test</Button>
+    </>
   );
 }
 
