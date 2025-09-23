@@ -20,7 +20,7 @@ import AppNavigator from "./src/navigation";
 import { lightTheme, darkTheme } from "./src/styles/theme";
 import { ConnectionProvider } from "./src/api/ConnectionContext";
 import { ToastProvider } from "./src/api/ToastProvider";
-import { NetworkDialogProvider } from "./src/api/NetWorkDialogContext";
+import { NetworkDialogProvider } from "./src/api/NetworkDialogContext";
 
 const { LightTheme: navLight, DarkTheme: navDark } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
