@@ -7,7 +7,7 @@ import HyperhdrScannerContent from "../components/HyperhdrScannerContent";
 
 // Paper components
 import { useTheme, Appbar, Button } from "react-native-paper";
-import { useDialog } from "../api/NetWorkDialogContext";
+import { useNetworkDialog } from "../api/NetworkDialogContext";
 
 // ✅ Type the navigation hook
 type MdnsScannerNavigationProp = NativeStackNavigationProp<
@@ -18,7 +18,7 @@ type MdnsScannerNavigationProp = NativeStackNavigationProp<
 export default function MdnsScanner() {
   const navigation = useNavigation<MdnsScannerNavigationProp>();
   const theme = useTheme(); // Paper theme
-  const { showErrorDialog } = useDialog();
+  const { showErrorDialog } = useNetworkDialog();
 
   const handleOpen = () => {
     navigation.replace("MainDashBoard");

@@ -10,9 +10,9 @@ type NetworkDialogContextType = {
 
 const NetworkDialogContext = createContext<NetworkDialogContextType | undefined>(undefined);
 
-export const useDialog = () => {
+export const useNetworkDialog = () => {
   const ctx = useContext(NetworkDialogContext);
-  if (!ctx) throw new Error("useDialog must be used within NetworkDialogProvider");
+  if (!ctx) throw new Error("useNetworkDialog must be used within NetworkDialogProvider");
   return ctx;
 };
 

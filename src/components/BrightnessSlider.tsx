@@ -5,14 +5,14 @@ import { commonStyles } from '../styles/common';
 import Toast from 'react-native-toast-message';
 import { useLedApi } from '../api/ledApi';
 import { useTheme, Text } from 'react-native-paper';
-import { useDialog } from '../api/NetWorkDialogContext';
+import { useNetworkDialog } from '../api/NetworkDialogContext';
 
 const BrightnessSlider = () => {
     const {adjustLedBrightness, getLedBrightness} = useLedApi();
     
     const [brightness, setBrightness] = useState(50);
     const theme = useTheme();
-    const { showErrorDialog } = useDialog();
+    const { showErrorDialog } = useNetworkDialog();
 
     const handleBrightnessChange = async (value: number): Promise<void> => {
         try {
