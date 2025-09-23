@@ -49,19 +49,19 @@ export default function App() {
           backgroundColor="transparent"
           barStyle={isDarkMode ? "light-content" : "dark-content"}
         />
-        <ConnectionProvider>
           <PaperProvider theme={theme}>
             <Portal.Host>
               <NavigationContainer theme={theme}>
                 <ToastProvider>
                   <NetworkDialogProvider>
-                    <AppNavigator />
+                    <ConnectionProvider>
+                      <AppNavigator />
+                    </ConnectionProvider>
                   </NetworkDialogProvider>
                 </ToastProvider>
               </NavigationContainer>
             </Portal.Host>
           </PaperProvider>
-        </ConnectionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

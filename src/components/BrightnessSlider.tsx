@@ -5,20 +5,17 @@ import { commonStyles } from '../styles/common';
 import Toast from 'react-native-toast-message';
 import { useLedApi } from '../api/ledApi';
 import { useTheme, Text } from 'react-native-paper';
-import { useNetworkDialog } from '../api/NetworkDialogContext';
 
 const BrightnessSlider = () => {
     const {adjustLedBrightness, getLedBrightness} = useLedApi();
     
     const [brightness, setBrightness] = useState(50);
     const theme = useTheme();
-    const { showErrorDialog } = useNetworkDialog();
 
     const handleBrightnessChange = async (value: number): Promise<void> => {
         try {
             await adjustLedBrightness(value);
         } catch (error: any) {
-            showErrorDialog();
             // Toast.show({
             //     type: 'error',           // success | error | info
             //     text1: error.message ?? 'error in setting Brightness',
@@ -33,7 +30,6 @@ const BrightnessSlider = () => {
             const res = await getLedBrightness()
             setBrightness(res.data.brightness)
         } catch(error:any) {
-            showErrorDialog();
             // Toast.show({
             //     type: 'error',           // success | error | info
             //     text1: error.message ?? 'Error in fetching Brightness',

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useMemo, useState, useEffect, useRef } from "react";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { BleManager, Device } from "react-native-ble-plx";
+import { useNetworkDialog } from "./NetworkDialogContext";
 
 // Types
 type ConnectionContextType = {
@@ -36,6 +37,7 @@ const ConnectionContext = createContext<ConnectionContextType | undefined>(undef
 
 export const ConnectionProvider = ({ children }: { children: React.ReactNode }) => {
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
+  const {showErrorDialog} = useNetworkDialog()
 
   // Axios instance rebuilds whenever baseUrl changes
   const api = useMemo(() => {
@@ -59,7 +61,8 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        console.error("API Error:", error?.response?.data || error.message);
+        console.error("API Error: from context >>", error?.response?.data || error.message);
+        showErrorDialog();
         return Promise.reject(error);
       }
     );
@@ -85,7 +88,8 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        console.error("API Error:", error?.response?.data || error.message);
+        console.error("hyperAPI Error: from context >>>>", error?.response?.data || error.message);
+        showErrorDialog();
         return Promise.reject(error);
       }
     );
@@ -152,9 +156,15 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     const socket = new WebSocket(wsUrl);
     setWs(socket);
 
-    socket.onopen = () => console.log("✅ WebSocket connected:", wsUrl);
-    // socket.onerror = (err) => console.error("❌ WebSocket error:", err);
-    // socket.onclose = () => console.log("⚠️ WebSocket closed:", wsUrl);
+    socket.onopen = () => console.log("✅ WebSocket connected: from context >>>", wsUrl);
+    socket.onerror = (err) => {
+      showErrorDialog();
+      console.error("❌ WebSocket error:", err);
+    }
+    socket.onclose = () => {
+      showErrorDialog();
+      console.log("⚠️ WebSocket closed: from context >>", wsUrl);
+    }
 
     return () => {
       socket.close();
