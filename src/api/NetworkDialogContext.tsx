@@ -25,9 +25,9 @@ export const NetworkDialogProvider: React.FC<Props> = ({ children }) => {
   const showErrorDialog = (message?: string) => {
     setBodyText(
       message ??
-        `• Make sure your mobile, TV, and device are connected to the same Wi-Fi network\n
-• Ensure the device is powered on.\n
-• Keep your device nearby for a stable connection.`
+        `Make sure your mobile, TV, and device are connected to the same Wi-Fi network.\n
+Ensure the device is powered on.\n
+Keep your device nearby for a stable connection.`
     );
     setIsVisible(true);
   };
@@ -43,10 +43,10 @@ export const NetworkDialogProvider: React.FC<Props> = ({ children }) => {
       <CommonDialog
         visible={isVisible}
         onDismiss={hideDialog}
-        okText="Ok"
+        okText="Retry Connection"
         onOk={hideDialog}
         showCancel={false}
-        title="Troubleshoot"
+        title="Device Disconnected"
         bodyText={bodyText}
         bodyTextStyle={{ textAlign: "center" }}
         isChildrenFirstContent={true}
