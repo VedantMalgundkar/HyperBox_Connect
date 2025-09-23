@@ -30,15 +30,24 @@ type ConnectionContextType = {
   handleConnect: (device: Device) => void;
   handleDisconnect: () => void;
   bleDevice: Device | null;
+  handleRetry: () => void;
+  retry: boolean;
 };
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
 
 export const ConnectionProvider = ({ children }: { children: React.ReactNode }) => {
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
+  const [retry, setRetry] = useState<boolean>(false);
+  const [isAPiConnected, setIsApiConnected] = useState<boolean>(false);
+  const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
+
+  const isConnectionOk = isAPiConnected && isWsConnected;
 
   // Axios instance rebuilds whenever baseUrl changes
   const api = useMemo(() => {
+    console.log("ran api memo >> ")
+    
     if (!baseUrl) return null;
 
     const instance = axios.create({
@@ -65,9 +74,11 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     );
 
     return instance;
-  }, [baseUrl]);
+  }, [baseUrl, retry]);
 
   const hyperApi = useMemo(() => {
+    console.log("ran hyperApi memo >> ")
+
     if (!baseUrl) return null;
     const url8090 = baseUrl.replace(/:\d+/, ":8090");
 
@@ -91,7 +102,7 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     );
 
     return instance;
-  }, [baseUrl]);
+  }, [baseUrl, retry]);
 
   const bleManager = useMemo(() => new BleManager(), []);
 
@@ -140,6 +151,7 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
+    console.log("ran ws effect >> ")
     if (!baseUrl) {
       if (ws) {
         ws.close();
@@ -152,15 +164,22 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     const socket = new WebSocket(wsUrl);
     setWs(socket);
 
-    socket.onopen = () => console.log("✅ WebSocket connected:", wsUrl);
+    socket.onopen = () => {
+      console.log("✅ WebSocket connected:", wsUrl)
+      setIsWsConnected(true);
+    };
     // socket.onerror = (err) => console.error("❌ WebSocket error:", err);
     // socket.onclose = () => console.log("⚠️ WebSocket closed:", wsUrl);
+    socket.onclose = () => {
+      console.log("🚪 WS closed");
+      setIsWsConnected(false);
+    };
 
     return () => {
       socket.close();
       setWs(null);
     };
-  }, [baseUrl]);
+  }, [baseUrl, retry]);
 
   const disconnectWS = () => {
     ws?.close();
@@ -183,6 +202,10 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
       // bleConnectionRef.current = null;
       setBleDevice(null);
     }
+
+  const handleRetry = () => {
+    setRetry((priv)=>!priv)
+  }
   
 
   return (
@@ -199,6 +222,8 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
         handleConnect,
         handleDisconnect,
         bleDevice,
+        handleRetry,
+        retry
       }}
     >
       {children}
