@@ -18,10 +18,15 @@ import { RootStackParamList } from '../navigation';
 import { useTheme, Appbar } from "react-native-paper";
 import { useSysApi } from '../api/sysApi';
 import { useFocusEffect } from '@react-navigation/native';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { useNavigation } from '@react-navigation/native';
+import { RootDrawerParamList } from '../navigation';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
+// type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
+type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
 
-const MainDashBoard = ({ navigation }: Props) => {
+const MainDashBoard = () => {
+  const navigation = useNavigation<MainDashBoardDrawerProp>();
   const [hasCleared, setHasCleared] = useState<boolean>(false);
   const [isChangeDeviceDrawerOpen, setIsChangeDeviceDrawerOpen] = useState(false);
   const [isDeviceNameUpdating, setDeviceNameUpdating] = useState(false);
@@ -33,7 +38,7 @@ const MainDashBoard = ({ navigation }: Props) => {
   const handleWifiIconClick = () => {
     console.log("handleWifiIconClick >>>>", mac);
     if(mac){
-      navigation.navigate("WifiScanner",{deviceId: mac, isBluetoothConnected: false})
+      // navigation.navigate("WifiScanner",{deviceId: mac, isBluetoothConnected: false})
     }    
   }
 
@@ -51,6 +56,13 @@ const MainDashBoard = ({ navigation }: Props) => {
     navigation.setOptions({
       header: () => (
         <Appbar.Header style={{ backgroundColor: theme.colors.primary }}>
+          {/* Hamburger menu icon */}
+        <Appbar.Action
+          icon="menu"
+          color={theme.colors.onPrimary}
+          onPress={() => navigation.toggleDrawer()}
+        />
+
           {/* Title */}
           <Appbar.Content
             title="Light Studio"

@@ -1,43 +1,48 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import MainDashBoard from '../screens/MainDashBoard';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import MdnsScanner from '../screens/MdnsScanner';
+import MainDashBoard from '../screens/MainDashBoard';
 import BLEScanner from '../screens/BleScannerScreen';
-import {CodeScannerPage} from '../screens/BarcodeScanner';
+import { CodeScannerPage } from '../screens/BarcodeScanner';
 import WifiScanner from '../screens/WifiScanner';
+import AppDrawer from './CustomDrawerContent';
 
-// Define all your routes here
+// Stack param list
 export type RootStackParamList = {
   MdnsScanner: undefined;
-  MainDashBoard: undefined; // or { someParam: string } if you want to pass params
-  BleScanner:undefined;
-  codeScanner:undefined;
-  WifiScanner: { deviceId: string, isBluetoothConnected: boolean };
+  AppDrawer: undefined; // Drawer is a nested navigator
+  WifiScanner: { deviceId: string; isBluetoothConnected: boolean };
+};
+
+// Drawer param list
+export type RootDrawerParamList = {
+  MainDashBoard: undefined;
+  BleScanner: undefined;
+  CodeScanner: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+// Root navigation (Stack + Drawer nested)
 const AppNavigator = () => {
   return (
-    <Stack.Navigator
-      initialRouteName="MdnsScanner"
-    >
+    <Stack.Navigator initialRouteName="MdnsScanner">
+      {/* Landing page */}
       <Stack.Screen
         name="MdnsScanner"
         component={MdnsScanner}
+        options={{ headerShown: true }}
       />
+
+      {/* Drawer lives inside Stack */}
       <Stack.Screen
-        name="MainDashBoard"
-        component={MainDashBoard}
+        name="AppDrawer"
+        component={AppDrawer}
+        options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="BleScanner"
-        component={BLEScanner}
-      />
-      <Stack.Screen
-        name="codeScanner"
-        component={CodeScannerPage}
-      />
+
+      {/* WifiScanner stays outside drawer */}
       <Stack.Screen
         name="WifiScanner"
         component={WifiScanner}

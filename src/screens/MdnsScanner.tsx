@@ -21,7 +21,7 @@ export default function MdnsScanner() {
   const { showErrorDialog } = useNetworkDialog();
 
   const handleOpen = () => {
-    navigation.replace("MainDashBoard");
+    navigation.replace("AppDrawer");
   };
 
   // 👇 Move header into setOptions
@@ -36,7 +36,7 @@ export default function MdnsScanner() {
           <Appbar.Action
             icon="plus"
             color={theme.colors.onPrimary}
-            onPress={() => navigation.navigate("BleScanner")}
+            // onPress={() => navigation.navigate("BleScanner")}
             // onPress={() => navigation.navigate("MainDashBoard")}
           />
         </Appbar.Header>
@@ -46,7 +46,10 @@ export default function MdnsScanner() {
 
   return (
     // Content area
-    <HyperhdrScannerContent onConnect={handleOpen} />
+    <>
+    {/* <HyperhdrScannerContent onConnect={handleOpen} /> */}
+    <Button onPress={handleOpen}>Test</Button>
+    </>
   );
 }
 
