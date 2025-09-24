@@ -1,34 +1,55 @@
 import React from 'react';
-import { ScrollView, SafeAreaView } from 'react-native';
+import { ScrollView, SafeAreaView, Text } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Drawer as PaperDrawer } from 'react-native-paper';
 import MainDashBoard from '../screens/MainDashBoard';
-import BLEScanner from '../screens/BleScannerScreen';
-import { CodeScannerPage } from '../screens/BarcodeScanner';
+import WebViewScreen from '../screens/WebView';
 import { RootDrawerParamList } from '.';
+import { MaterialIcons } from "@react-native-vector-icons/material-icons";
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
+import { useTheme } from 'react-native-paper';
 
 const Drawer = createDrawerNavigator<RootDrawerParamList>();
 
 // Custom drawer component
 const CustomDrawerContent = (props: any) => {
+  const theme = useTheme();
+
   return (
     <ScrollView>
-      <SafeAreaView>
-        <PaperDrawer.Section>
+      <SafeAreaView style={{ paddingTop: 60 }}>
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: '600',
+            color: theme.colors.onSurface,
+            marginLeft: 16,
+            marginBottom: 25,
+          }}
+        >
+          HyperBox Connect
+        </Text>
+
+        <PaperDrawer.Section showDivider={false}>
           <PaperDrawer.Item
-            label="Main Dashboard"
+            label="Light Studio"
+            icon={({ size, color }) => (
+              <MaterialDesignIcons
+                name="led-strip-variant"
+                size={size}
+                color={color}
+              />
+            )}
             active={props.state.index === 0}
             onPress={() => props.navigation.navigate('MainDashBoard')}
           />
           <PaperDrawer.Item
-            label="BLE Scanner"
+            label="HyperHDR Configuration"
+            icon={({ size, color }) => (
+              <MaterialIcons name="settings" size={size} color={color} />
+            )}
             active={props.state.index === 1}
-            onPress={() => props.navigation.navigate('BleScanner')}
-          />
-          <PaperDrawer.Item
-            label="Code Scanner"
-            active={props.state.index === 2}
-            onPress={() => props.navigation.navigate('CodeScanner')}
+            onPress={() => props.navigation.navigate('WebViewScreen')}
           />
         </PaperDrawer.Section>
       </SafeAreaView>
@@ -44,8 +65,7 @@ const AppDrawer = () => {
       drawerContent={props => <CustomDrawerContent {...props} />}
     >
       <Drawer.Screen name="MainDashBoard" component={MainDashBoard} />
-      <Drawer.Screen name="BleScanner" component={BLEScanner} />
-      <Drawer.Screen name="CodeScanner" component={CodeScannerPage} />
+      <Drawer.Screen name="WebViewScreen" component={WebViewScreen} />
     </Drawer.Navigator>
   );
 };

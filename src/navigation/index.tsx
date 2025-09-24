@@ -1,11 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
 import MdnsScanner from '../screens/MdnsScanner';
-import MainDashBoard from '../screens/MainDashBoard';
-import BLEScanner from '../screens/BleScannerScreen';
-import { CodeScannerPage } from '../screens/BarcodeScanner';
 import WifiScanner from '../screens/WifiScanner';
+import BLEScanner from '../screens/BleScannerScreen';
 import AppDrawer from './CustomDrawerContent';
 
 // Stack param list
@@ -13,13 +10,13 @@ export type RootStackParamList = {
   MdnsScanner: undefined;
   AppDrawer: undefined; // Drawer is a nested navigator
   WifiScanner: { deviceId: string; isBluetoothConnected: boolean };
+  BleScanner: undefined;
 };
 
 // Drawer param list
 export type RootDrawerParamList = {
   MainDashBoard: undefined;
-  BleScanner: undefined;
-  CodeScanner: undefined;
+  WebViewScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -40,6 +37,11 @@ const AppNavigator = () => {
         name="AppDrawer"
         component={AppDrawer}
         options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="BleScanner"
+        component={BLEScanner}
       />
 
       {/* WifiScanner stays outside drawer */}

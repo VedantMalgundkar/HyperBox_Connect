@@ -36,7 +36,7 @@ export default function MdnsScanner() {
           <Appbar.Action
             icon="plus"
             color={theme.colors.onPrimary}
-            // onPress={() => navigation.navigate("BleScanner")}
+            onPress={() => navigation.navigate("BleScanner")}
             // onPress={() => navigation.navigate("MainDashBoard")}
           />
         </Appbar.Header>

@@ -19,14 +19,20 @@ import { useTheme, Appbar } from "react-native-paper";
 import { useSysApi } from '../api/sysApi';
 import { useFocusEffect } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { RootDrawerParamList } from '../navigation';
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 // type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
-type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
+// type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
+
+type MainDashBoardNavigationProp = CompositeNavigationProp<
+  DrawerNavigationProp<RootDrawerParamList, "MainDashBoard">,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 const MainDashBoard = () => {
-  const navigation = useNavigation<MainDashBoardDrawerProp>();
+  const navigation = useNavigation<MainDashBoardNavigationProp>();
   const [hasCleared, setHasCleared] = useState<boolean>(false);
   const [isChangeDeviceDrawerOpen, setIsChangeDeviceDrawerOpen] = useState(false);
   const [isDeviceNameUpdating, setDeviceNameUpdating] = useState(false);
@@ -37,8 +43,8 @@ const MainDashBoard = () => {
 
   const handleWifiIconClick = () => {
     console.log("handleWifiIconClick >>>>", mac);
-    if(mac){
-      // navigation.navigate("WifiScanner",{deviceId: mac, isBluetoothConnected: false})
+    if(mac) {
+      navigation.navigate("WifiScanner",{deviceId: mac, isBluetoothConnected: false})
     }    
   }
 
@@ -80,7 +86,7 @@ const MainDashBoard = () => {
                 paddingVertical: 4,
                 paddingHorizontal: 8,
                 borderRadius: 30,
-                marginRight: 8, // spacing from wifi icon
+                marginRight: 8,
               },
             ]}
           >
