@@ -21,6 +21,7 @@ export const commonStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  justifyBet: {justifyContent: 'space-between'},
   // For column layout
   column: {
     flexDirection: 'column',

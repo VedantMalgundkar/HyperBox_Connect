@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, StyleProp, TextStyle } from "react-native";
+import { StyleSheet, StyleProp, TextStyle, ViewStyle } from "react-native";
 import { Button, Dialog, Portal, Text } from "react-native-paper";
 
 type CommonDialogProps = {
@@ -21,7 +21,8 @@ type CommonDialogProps = {
 
     loading?: boolean;
     isChildrenFirstContent?: boolean;
-    bodyTextStyle?: StyleProp<TextStyle>; 
+    bodyTextStyle?: StyleProp<TextStyle>;
+    dialogStyle?: StyleProp<ViewStyle>;
 };
 
 export const CommonDialog: React.FC<CommonDialogProps> = ({
@@ -37,14 +38,19 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
     showCancel = true,
     loading = false,
     isChildrenFirstContent = false,
-    bodyTextStyle
+    bodyTextStyle,
+    dialogStyle,
 }) => {
+    const shouldShowActions = showCancel && onOk
     return (
         <Portal>
-            <Dialog visible={visible} onDismiss={onDismiss} style={{
-                elevation: 0,
-                shadowColor: "transparent",
-            }}>
+            <Dialog visible={visible} onDismiss={onDismiss} style={[
+                    {
+                        elevation: 0,
+                        shadowColor: "transparent",
+                    },
+                    dialogStyle,
+                ]}>
                 {/* Title */}
                 {
                     title && (
@@ -61,16 +67,21 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
                 {!isChildrenFirstContent && children}
                 </Dialog.Content>
 
-                <Dialog.Actions>
-                    {
-                        showCancel && (
-                            <Button onPress={onDismiss}>{cancelText}</Button>
-                        )
-                    }
-                    {onOk && (
-                        <Button loading={loading} disabled={loading} onPress={onOk}>{okText}</Button>
-                    )}
-                </Dialog.Actions>
+                {
+                    shouldShowActions && (
+                        <Dialog.Actions>
+                            {
+                                showCancel && (
+                                    <Button onPress={onDismiss}>{cancelText}</Button>
+                                )
+                            }
+                            {onOk && (
+                                <Button loading={loading} disabled={loading} onPress={onOk}>{okText}</Button>
+                            )}
+                        </Dialog.Actions>
+                    )
+                }
+
             </Dialog>
         </Portal>
     );
