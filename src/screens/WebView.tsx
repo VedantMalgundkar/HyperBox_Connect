@@ -7,12 +7,13 @@ import { commonStyles } from '../styles/common';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { RootDrawerParamList } from '../navigation';
 import { useNavigation } from '@react-navigation/native';
+import WebViewComponent from '../components/WebViewComponent';
 
 // Define type for navigation props
 // type Props = NativeStackScreenProps<RootStackParamList, 'WebViewScreen'>;
 type WebViewProp = DrawerNavigationProp<RootDrawerParamList, 'WebViewScreen'>;
 
-const WebViewScreen = () => {
+export default function WebViewScreen() {
   const theme = useTheme();
   const navigation = useNavigation<WebViewProp>();
 
@@ -20,14 +21,13 @@ const WebViewScreen = () => {
     navigation.setOptions({
       header: () => (
         <Appbar.Header style={{ backgroundColor: theme.colors.primary }}>
-          {/* Hamburger menu icon */}
           <Appbar.Action
             icon="menu"
             color={theme.colors.onPrimary}
             onPress={() => navigation.toggleDrawer()}
           />
           <Appbar.Content
-            title="Dummy Screen"
+            title="HyperHDR Panel"
             titleStyle={{ color: theme.colors.onPrimary }}
           />
         </Appbar.Header>
@@ -36,16 +36,8 @@ const WebViewScreen = () => {
   }, [navigation, theme]);
 
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: theme.colors.surface }]}>
-      <ScrollView contentContainerStyle={commonStyles.scrollContent}>
-        <View style={{ padding: 16 }}>
-          <Text style={{ fontSize: 18, color: theme.colors.onSurface }}>
-            This is a dummy screen with a back button in the header.
-          </Text>
-        </View>
-      </ScrollView>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.surface }}>
+      <WebViewComponent />
     </SafeAreaView>
   );
 };
-
-export default WebViewScreen;
