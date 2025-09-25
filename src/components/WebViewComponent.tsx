@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {View} from 'react-native';
 import {WebView} from 'react-native-webview';
 
@@ -44,7 +44,7 @@ const WebViewComponent: React.FC<WebViewComponentProps> = ({isDesktopMode}) => {
   return (
     <View style={{flex: 1}}>
       <WebView
-        source={{uri: 'https://reactnative.dev/'}}
+        source={{uri: 'http://192.168.0.112:8090/'}}
         javaScriptEnabled={true}
         domStorageEnabled={true}
         style={{flex: 1}}

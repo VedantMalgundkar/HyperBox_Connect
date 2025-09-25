@@ -3,6 +3,7 @@ import React, { createContext, useContext, useMemo, useState, useEffect, useRef 
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { BleManager, Device } from "react-native-ble-plx";
 import { useNetworkDialog } from "./NetworkDialogContext";
+import { changePortOrProtoOfUrl } from "../utils/helper";
 
 // Types
 type ConnectionContextType = {
@@ -129,18 +130,6 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   // --- WebSocket ---
-  const makeWsUrl = (source: string): string => {
-    let wsUrl = source.replace(/^http/, "ws");
-
-    if (/:\d+/.test(wsUrl)) {
-      wsUrl = wsUrl.replace(/:\d+/, ":8090");
-    } else {
-      wsUrl = wsUrl.replace(/(ws:\/\/[^/]+)/, "$1:8090");
-    }
-
-    return wsUrl;
-  };
-
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
@@ -152,7 +141,8 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
       return;
     }
 
-    const wsUrl = makeWsUrl(baseUrl);
+    // const wsUrl = makeWsUrl(baseUrl);
+    const wsUrl = changePortOrProtoOfUrl(baseUrl, "ws", 8090);
     const socket = new WebSocket(wsUrl);
     setWs(socket);
 

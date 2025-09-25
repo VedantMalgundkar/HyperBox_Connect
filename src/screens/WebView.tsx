@@ -1,12 +1,12 @@
-import React, {useLayoutEffect, useState} from 'react';
-import {SafeAreaView} from 'react-native';
-import {useTheme, Appbar} from 'react-native-paper';
-import {DrawerNavigationProp} from '@react-navigation/drawer';
-import {RootDrawerParamList} from '../navigation';
-import {useNavigation} from '@react-navigation/native';
+import React, { useLayoutEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native';
+import { useTheme, Appbar } from 'react-native-paper';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { RootDrawerParamList } from '../navigation';
+import { useNavigation } from '@react-navigation/native';
 import WebViewComponent from '../components/WebViewComponent';
-import {Checkbox} from 'react-native-paper';
-import {MaterialIcons} from '@react-native-vector-icons/material-icons';
+import { Checkbox } from 'react-native-paper';
+import { MaterialIcons } from '@react-native-vector-icons/material-icons';
 import CommonModal from '../components/CommonModal';
 import {
   heightPercentageToDP as hp,
@@ -14,6 +14,8 @@ import {
 } from 'react-native-responsive-screen';
 import MenuRow from '../components/MenuRow';
 import CopyHyperUrl from '../components/CopyHyperUrl';
+import { useConnection } from '../api/ConnectionContext';
+import { changePortOrProtoOfUrl } from '../utils/helper';
 // Define type for navigation props
 // type Props = NativeStackScreenProps<RootStackParamList, 'WebViewScreen'>;
 type WebViewProp = DrawerNavigationProp<RootDrawerParamList, 'WebViewScreen'>;
@@ -23,6 +25,7 @@ export default function WebViewScreen() {
   const navigation = useNavigation<WebViewProp>();
   const [isRightModalVisible, setRightModalVisible] = useState<boolean>(false);
   const [isDesktopMode, setIsDesktopMode] = useState<boolean>(false);
+  const { baseUrl } = useConnection();
 
   const openModal = () => {
     setRightModalVisible(true);
@@ -35,7 +38,7 @@ export default function WebViewScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       header: () => (
-        <Appbar.Header style={{backgroundColor: theme.colors.primary}}>
+        <Appbar.Header style={{ backgroundColor: theme.colors.primary }}>
           <Appbar.Action
             icon="menu"
             color={theme.colors.onPrimary}
@@ -43,7 +46,7 @@ export default function WebViewScreen() {
           />
           <Appbar.Content
             title="HyperHDR Panel"
-            titleStyle={{color: theme.colors.onPrimary}}
+            titleStyle={{ color: theme.colors.onPrimary }}
           />
           <Appbar.Action
             icon="dots-vertical"
@@ -60,7 +63,7 @@ export default function WebViewScreen() {
   };
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.surface}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.surface }}>
       <WebViewComponent
         key={Number(isDesktopMode)}
         isDesktopMode={isDesktopMode}
@@ -69,7 +72,7 @@ export default function WebViewScreen() {
       <CommonModal
         isVisible={isRightModalVisible}
         onClose={closeModal}
-        modalStyle={{margin: 0}}
+        modalStyle={{ margin: 0 }}
         containerStyle={{
           backgroundColor: theme.colors.surfaceVariant,
           position: 'absolute',
@@ -100,14 +103,19 @@ export default function WebViewScreen() {
           trailing={
             <Checkbox status={isDesktopMode ? 'checked' : 'unchecked'} />
           }
-          textStyle={{color: theme.colors.onSurfaceVariant}}
+          textStyle={{ color: theme.colors.onSurfaceVariant }}
         />
 
-        <CopyHyperUrl
-          textStyle={{color: theme.colors.onSurfaceVariant}}
-          textToCopy="Hiii"
-          color={theme.colors.onSurfaceVariant}
-        />
+        <>
+          {baseUrl && (
+            <CopyHyperUrl
+              textStyle={{ color: theme.colors.onSurfaceVariant }}
+              textToCopy={changePortOrProtoOfUrl(baseUrl,"http",8090)}
+              color={theme.colors.onSurfaceVariant}
+            />
+          )}
+        </>
+
       </CommonModal>
     </SafeAreaView>
   );
