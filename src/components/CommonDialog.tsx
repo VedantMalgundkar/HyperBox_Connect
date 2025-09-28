@@ -41,7 +41,7 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
     bodyTextStyle,
     dialogStyle,
 }) => {
-    const shouldShowActions = showCancel && onOk
+    const shouldShowActions = showCancel || onOk
     return (
         <Portal>
             <Dialog visible={visible} onDismiss={onDismiss} style={[

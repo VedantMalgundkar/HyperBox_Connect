@@ -5,8 +5,9 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { RootDrawerParamList } from '../navigation';
 import { useNavigation } from '@react-navigation/native';
 import WebViewComponent from '../components/WebViewComponent';
-import { Checkbox } from 'react-native-paper';
-import { MaterialIcons } from '@react-native-vector-icons/material-icons';
+// import { Checkbox } from 'react-native-paper';
+// import { MaterialIcons } from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import CommonModal from '../components/CommonModal';
 import {
   heightPercentageToDP as hp,
@@ -15,7 +16,7 @@ import {
 import MenuRow from '../components/MenuRow';
 import CopyHyperUrl from '../components/CopyHyperUrl';
 import { useConnection } from '../api/ConnectionContext';
-import { changePortOrProtoOfUrl } from '../utils/helper';
+import { changePortOrProtoOfUrl, openLinkInBrowser, WhichPltform } from '../utils/helper';
 // Define type for navigation props
 // type Props = NativeStackScreenProps<RootStackParamList, 'WebViewScreen'>;
 type WebViewProp = DrawerNavigationProp<RootDrawerParamList, 'WebViewScreen'>;
@@ -24,15 +25,11 @@ export default function WebViewScreen() {
   const theme = useTheme();
   const navigation = useNavigation<WebViewProp>();
   const [isRightModalVisible, setRightModalVisible] = useState<boolean>(false);
-  const [isDesktopMode, setIsDesktopMode] = useState<boolean>(false);
   const { baseUrl } = useConnection();
+  const hyperWebUrl = changePortOrProtoOfUrl(baseUrl!,"http",8090) // on this page base url can't be null 
 
   const openModal = () => {
     setRightModalVisible(true);
-  };
-
-  const handleToggleDesktopMode = () => {
-    setIsDesktopMode(prev => !prev);
   };
 
   useLayoutEffect(() => {
@@ -64,10 +61,7 @@ export default function WebViewScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.surface }}>
-      <WebViewComponent
-        key={Number(isDesktopMode)}
-        isDesktopMode={isDesktopMode}
-      />
+      <WebViewComponent url={hyperWebUrl}/>
 
       <CommonModal
         isVisible={isRightModalVisible}
@@ -90,27 +84,28 @@ export default function WebViewScreen() {
         animationOutTiming={300}
         useNativeDriver={true}
         backdropOpacity={0}>
-        <MenuRow
-          renderIcon={() => (
-            <MaterialIcons
-              name="desktop-windows"
-              size={20}
-              color={theme.colors.onSurfaceVariant}
-            />
-          )}
-          label="Desktop site"
-          onPress={handleToggleDesktopMode}
-          trailing={
-            <Checkbox status={isDesktopMode ? 'checked' : 'unchecked'} />
-          }
-          textStyle={{ color: theme.colors.onSurfaceVariant }}
-        />
-
         <>
+          {
+            baseUrl && (
+              <MenuRow
+                renderIcon={() => (
+                  <MaterialDesignIcons
+                    name={WhichPltform == "android" ? "google-chrome": "apple-safari"}
+                    size={20}
+                    color={theme.colors.onSurfaceVariant}
+                  />
+                )}
+                label="Open in browser"
+                onPress={() => openLinkInBrowser(hyperWebUrl)}
+                // onPress={() => openLinkInBrowser("https://react.dev/")}
+                textStyle={{ color: theme.colors.onSurfaceVariant }}
+              />
+            )
+          }
           {baseUrl && (
             <CopyHyperUrl
               textStyle={{ color: theme.colors.onSurfaceVariant }}
-              textToCopy={changePortOrProtoOfUrl(baseUrl,"http",8090)}
+              textToCopy={hyperWebUrl}
               color={theme.colors.onSurfaceVariant}
             />
           )}

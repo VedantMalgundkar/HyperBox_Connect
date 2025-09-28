@@ -1,57 +1,58 @@
-import React, { useRef } from 'react';
-import {View} from 'react-native';
-import {WebView} from 'react-native-webview';
+import React, { useState } from "react";
+import { View, Text } from "react-native";
+import { WebView } from "react-native-webview";
+import { useNetworkDialog } from "../api/NetworkDialogContext";
+import { useTheme, Button } from "react-native-paper";
 
 type WebViewComponentProps = {
-  isDesktopMode: boolean;
+  url: string;
 };
 
-const WebViewComponent: React.FC<WebViewComponentProps> = ({isDesktopMode}) => {
-  const mobileUA =
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile Safari/604.1';
-  const desktopUA =
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const WebViewComponent: React.FC<WebViewComponentProps> = ({ url }) => {
+  const { showErrorDialog } = useNetworkDialog();
+  const theme = useTheme();
+  const [hasError, setHasError] = useState(false);
+  const [retry, setRetry] = useState(false); 
 
-  const injectedJS = `
-  (function() {
-    var meta = document.querySelector('meta[name=viewport]');
-    var content;
-    if (${isDesktopMode}) {
-      // Desktop mode: scale to fit the screen width
-      var screenWidth = window.innerWidth;
-      var targetWidth = 1200; // width of HyperHDR desktop layout
-      var scale = screenWidth / targetWidth;
-      content = 'width=1200, initial-scale=' + scale + ', minimum-scale=' + scale + ', maximum-scale=' + scale + ', user-scalable=yes';
-    } else {
-      // Mobile mode
-      content = 'width=device-width, initial-scale=1.0';
-    }
+  const handleRetry = () => {
+    setRetry((priv)=>!priv)
+  }
 
-    if (meta) {
-      meta.setAttribute('content', content);
-    } else {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'viewport');
-      meta.setAttribute('content', content);
-      document.head.appendChild(meta);
-    }
-
-    window.ReactNativeWebView.postMessage("UA: " + navigator.userAgent);
-  })();
-  true;
-`;
+  if (hasError) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 16,
+        }}
+      >
+        <Text style={{ color: theme.colors.onSurface, marginBottom: 12 }}>
+          Something went wrong loading the page.
+        </Text>
+        <Button
+          mode="contained"
+          onPress={() => handleRetry()}
+        >
+          Retry
+        </Button>
+      </View>
+    );
+  }
 
   return (
-    <View style={{flex: 1}}>
-      <WebView
-        source={{uri: 'http://192.168.0.112:8090/'}}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        style={{flex: 1}}
-        userAgent={isDesktopMode ? desktopUA : mobileUA}
-        injectedJavaScript={injectedJS}
-      />
-    </View>
+    <WebView
+      key={Number(retry)}
+      source={{ uri: url }}
+      javaScriptEnabled={true}
+      domStorageEnabled={true}
+      style={{ flex: 1 }}
+      onError={() => {
+        setHasError(true);
+        showErrorDialog();
+      }}
+    />
   );
 };
 

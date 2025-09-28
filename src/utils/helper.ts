@@ -1,3 +1,8 @@
+import { Linking, Platform } from 'react-native';
+
+const IS_ANDROID = Platform.OS === 'android';
+export const WhichPltform = IS_ANDROID ? 'android' : 'ios'
+
 export const isEmptyObject = (obj: any) => obj && Object.keys(obj).length === 0 && obj.constructor === Object;
 
 export const changePortOrProtoOfUrl = (
@@ -23,4 +28,18 @@ export const changePortOrProtoOfUrl = (
   }
 
   return result;
+};
+
+export const openLinkInBrowser = async (url: string) => {
+  try {
+    const supported = await Linking.canOpenURL(url);
+
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      console.log(`Don't know how to open this URL: ${url}`);
+    }
+  } catch (err) {
+    console.error("Failed to open URL:", err);
+  }
 };

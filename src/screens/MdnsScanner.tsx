@@ -47,7 +47,7 @@ export default function MdnsScanner() {
   return (
     // Content area
     <>
-    {/* <HyperhdrScannerContent onConnect={handleOpen} /> */}
+    <HyperhdrScannerContent onConnect={handleOpen} />
     <Button onPress={handleOpen}>Test</Button>
     </>
   );
