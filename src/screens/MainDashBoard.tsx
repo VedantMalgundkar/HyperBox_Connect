@@ -37,6 +37,7 @@ const MainDashBoard = () => {
   const [isChangeDeviceDrawerOpen, setIsChangeDeviceDrawerOpen] = useState(false);
   const [isDeviceNameUpdating, setDeviceNameUpdating] = useState(false);
   const [mac, setMac] = useState<string|undefined>(undefined);
+  const [isHdmiOverridden, setisHdmiOverridden] = useState<boolean>(false);
 
   const theme = useTheme(); // Paper theme
   const { getMac } = useSysApi();
@@ -56,7 +57,11 @@ const MainDashBoard = () => {
     if (!isDeviceNameUpdating) {
       setIsChangeDeviceDrawerOpen(false);
     }
-  };  
+  }; 
+
+  const handleHdmiOverride = (value:boolean) => {
+    setisHdmiOverridden(value)
+  }
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -188,8 +193,8 @@ const MainDashBoard = () => {
       <ScrollView contentContainerStyle={commonStyles.scrollContent}>
         {/* <Button title="Go Back" onPress={() => openDrawer()} /> */}
         <BrightnessSlider />
-        <InputSourceDashBoard />
-        <CustomColorPicker onColorClearOrChange={() => setHasCleared((prev) => !prev)} />
+        <InputSourceDashBoard onHdmiOverride={handleHdmiOverride}/>
+        <CustomColorPicker isHdmiOverriden={isHdmiOverridden} onColorClearOrChange={() => setHasCleared((prev) => !prev)} />
         <EffectTileContainer hasCleared={hasCleared} />
       </ScrollView>
     </SafeAreaView>

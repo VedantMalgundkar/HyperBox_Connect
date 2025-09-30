@@ -61,6 +61,7 @@ export type InputSourceDashBoardProps = {
   boxStyle?: ViewStyle;
   labelStyle?: TextStyle;
   gap?: number;
+  onHdmiOverride: (isHdmiConnected: boolean) => void;
 };
 
 interface LedPositionData {
@@ -105,11 +106,13 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   boxStyle,
   labelStyle,
   gap = 12,
+  onHdmiOverride,
 }) => {
   const ledPositionRef = useRef<LedPositionData[] | null>(null);
   const { ws } = useConnection();
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
+  const [isHdmiOn, setHdmiOn] = useState<boolean>(false);
 
   const tiles: [InputTile, InputTile, InputTile] = [
     {
@@ -421,8 +424,12 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
           const isFallback = await checkHdmiFallBack(ledPositionRef.current, flatColors);
           // console.log("falback check >>>",isFallback);
 
+          if (isFallback !== undefined) {
+            setHdmiOn(!isFallback);
+          }
+
           setCurrentInput(prev => {
-            if (!isFallback && !prev) {
+            if (isFallback !== undefined && !isFallback && !prev) {
               return {
                 componentId: "VIDEOGRABBER",
                 origin: "System",
@@ -466,6 +473,17 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   //     wsRef.current = null;
   //   }
   // };
+
+  useEffect(()=>{
+    if(!currentInput) {
+      return;
+    }
+    if(currentInput.componentId !== "VIDEOGRABBER" && isHdmiOn) {
+      onHdmiOverride(true);
+    } else {
+      onHdmiOverride(false);
+    }
+  },[isHdmiOn, currentInput])
 
   return (
     <View style={[styles.row, { columnGap: gap }, containerStyle]}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View, Text } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
@@ -12,13 +12,14 @@ import { commonStyles } from '../../styles/common';
 import { useTheme } from 'react-native-paper';
 
 type CustomColorPickerProps = {
+  isHdmiOverriden: boolean;
   onColorClearOrChange: () => void;
 };
 
 // generate 6 random colors for swatches
 const customSwatches = new Array(6).fill('#fff').map(() => colorKit.randomRgbColor().hex());
 
-export default function CustomColorPicker({ onColorClearOrChange }: CustomColorPickerProps) {
+export default function CustomColorPicker({ isHdmiOverriden, onColorClearOrChange }: CustomColorPickerProps) {
   const [resultColor, setResultColor] = useState(customSwatches[0]);
 
   const {applyColor, getCurrentActiveInput, stopEffect} = useLedApi();
@@ -138,6 +139,16 @@ export default function CustomColorPicker({ onColorClearOrChange }: CustomColorP
 
   return (
       <View style={[colorPickerStyle.pickerContainer,{backgroundColor:theme.colors.surfaceVariant}]}>
+        {
+          isHdmiOverriden && (
+          <TouchableOpacity onPress={handleClearColor}>
+            <Text style={{ color: theme.colors.onPrimary, backgroundColor: theme.colors.primary, position:"absolute", top:-12, right:-12, padding: 5, borderRadius: 5, fontSize:10}}>
+              Switch to HDMI
+            </Text>
+          </TouchableOpacity>
+          )
+        }
+        
         <ColorPicker
           value={resultColor}
           sliderThickness={20}

@@ -17,6 +17,7 @@ export const colorPickerStyle = StyleSheet.create({
     padding: 20,
     paddingBottom: 25,
     ...commonStyles.bRadius,
+    position:"relative",
   },
   panelStyle: {
     borderRadius: 16,
