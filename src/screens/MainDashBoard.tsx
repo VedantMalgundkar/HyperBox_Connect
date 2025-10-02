@@ -39,17 +39,30 @@ const MainDashBoard = () => {
   const [isChangeDeviceDrawerOpen, setIsChangeDeviceDrawerOpen] = useState(false);
   const [isDeviceNameUpdating, setDeviceNameUpdating] = useState(false);
   const [mac, setMac] = useState<string|undefined>(undefined);
-  // const [isHdmiOverridden, setisHdmiOverridden] = useState<boolean>(false);
   const [isHdmiOn, setHdmiOn] = useState<boolean>(false);
   const [currentInput, setCurrentInput] = useState<Priority | null>(null);
   
-  const isHdmiOverridden = currentInput ? ( currentInput.componentId !== "VIDEOGRABBER" && isHdmiOn ) : false
+  const isHdmiOverridden = currentInput ? (!["PROTOSERVER", "VIDEOGRABBER"].includes(currentInput.componentId) && isHdmiOn)  : false
   
   const [hasUserAgreedToOverrideHdmiPermenent, setHasUserAgreedToOverrideHdmiPermenent] = useState<boolean>(false);
 
   const [showOverridePopup, setShowOverridePopup] = useState<boolean>(false);
 
   const pendingActionRef = useRef<null | (() => void)>(null);
+
+  const isGrabberRunning = currentInput?.componentId == "PROTOSERVER";
+
+  let overRideTitle = "Override HDMI input?"
+  let overRideBodyText = "This action will change your current HDMI active LED input. Do you want to continue?"
+  
+  if (isGrabberRunning) {
+    overRideTitle = "Grabber is Running"
+    overRideBodyText = "You can’t override LED input while the Hyperion grabber is running. Please stop the grabber before continuing."
+  }
+
+  const closeOverridePopup = () => {
+    setShowOverridePopup(false)
+  }
 
   const isItOkayToCallApi = (action: () => void) => {
     if (!isHdmiOn || hasUserAgreedToOverrideHdmiPermenent) {
@@ -85,10 +98,6 @@ const MainDashBoard = () => {
       setIsChangeDeviceDrawerOpen(false);
     }
   }; 
-
-  // const handleHdmiOverride = (value:boolean) => {
-  //   setisHdmiOverridden(value)
-  // }
 
   const handleOverPopUpActions = () => {
     setShowOverridePopup(false);
@@ -197,17 +206,6 @@ const MainDashBoard = () => {
       }, [])
     );
 
-  // useEffect(()=>{
-  //   if(!currentInput) {
-  //     return;
-  //   }
-  //   if(currentInput.componentId !== "VIDEOGRABBER" && isHdmiOn) {
-  //     setisHdmiOverridden(true);
-  //   } else {
-  //     setisHdmiOverridden(false);
-  //   }
-  // },[isHdmiOn, currentInput])
-
   return (
     <SafeAreaView style={[commonStyles.container, {backgroundColor:theme.colors.surface}]}>
       <View style={{ flex: 1 }}>
@@ -241,23 +239,23 @@ const MainDashBoard = () => {
         {/* <InputSourceDashBoard currentInput={currentInput} setCurrentInput={setCurrentInput} isHdmiOn={isHdmiOn} onHdmiInputChange={handleHdmiInputChnage} onHdmiOverride={handleHdmiOverride}/> */}
         <InputSourceDashBoard currentInput={currentInput} setCurrentInput={setCurrentInput} onHdmiInputChange={handleHdmiInputChnage}/>
         <CustomColorPicker isItOkayToCallApi={isItOkayToCallApi} isHdmiOverriden={isHdmiOverridden} onColorClearOrChange={() => setHasCleared((prev) => !prev)} />
-        <EffectTileContainer hasCleared={hasCleared} />
+        <EffectTileContainer isItOkayToCallApi={isItOkayToCallApi} hasCleared={hasCleared} />
       </ScrollView>
 
       <CommonDialog
         visible={showOverridePopup}
-        onDismiss={()=>{
-          setShowOverridePopup(false)
-        }}
-        title="want to overrider hdmi input?"
-        onOk={()=>handleOverPopUpActions()}
-        onCancel={()=>{
+        title={overRideTitle}
+        bodyText={overRideBodyText}
+        okText={isGrabberRunning ? "Ok" : "Yes"}
+        cancelText="Yes don't ask again"
+        onDismiss={closeOverridePopup}
+        onOk={isGrabberRunning ? closeOverridePopup : handleOverPopUpActions}
+        onCancel={() => {
           setHasUserAgreedToOverrideHdmiPermenent(true);
-          handleOverPopUpActions()
+          handleOverPopUpActions();
         }}
-        cancelText="Dont ask again"
+        showCancel={isGrabberRunning? false: true}
       />
-      
     </SafeAreaView>
   );
 }

@@ -12,10 +12,11 @@ type Effect = {
 };
 
 type EffectTileContainerProps = {
+    isItOkayToCallApi: (action: () => void) => boolean;
     hasCleared: boolean;
 };
 
-export default function EffectTileContainer({ hasCleared }: EffectTileContainerProps) {
+export default function EffectTileContainer({ isItOkayToCallApi, hasCleared }: EffectTileContainerProps) {
     const [effects, setEffects] = useState<Effect[] | null>(null);
     const [activeEffect, setActiveEffect] = useState<Effect | null>(null);
     const theme = useTheme();
@@ -57,8 +58,14 @@ export default function EffectTileContainer({ hasCleared }: EffectTileContainerP
                 await stopEffect(100);
                 setActiveEffect(null);
             } else {
-                await applyEffect(effect);
-                setActiveEffect({ name: effect })
+                const isItOkay = isItOkayToCallApi(async ()=>{
+                    await applyEffect(effect)
+                    setActiveEffect({ name: effect })
+                })
+                if (isItOkay) {
+                    await applyEffect(effect)
+                    setActiveEffect({ name: effect })
+                }
             }
         } catch (error:any) {
             Toast.show({ type: 'error', text1: error.message ?? "Failed to apply or clear Led Effect", position: 'bottom' });

@@ -4,6 +4,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { BleManager, Device } from "react-native-ble-plx";
 import { useNetworkDialog } from "./NetworkDialogContext";
 import { changePortOrProtoOfUrl } from "../utils/helper";
+import { useToast } from "./ToastProvider";
 
 // Types
 type ConnectionContextType = {
@@ -39,6 +40,7 @@ const ConnectionContext = createContext<ConnectionContextType | undefined>(undef
 export const ConnectionProvider = ({ children }: { children: React.ReactNode }) => {
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
   const {showErrorDialog} = useNetworkDialog()
+  const showToast = useToast();
 
   // Axios instance rebuilds whenever baseUrl changes
   const api = useMemo(() => {
@@ -62,8 +64,13 @@ export const ConnectionProvider = ({ children }: { children: React.ReactNode }) 
     instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        console.error("API Error: from context >>", error?.response?.data || error.message);
-        showErrorDialog();
+        const apiResStatusCode = error?.response?.status;
+        const apiResMsg = error?.response?.data?.error;
+        const isGrabberRunningError = apiResStatusCode == 400 && apiResMsg && apiResMsg.toLowerCase().includes("disconnect hyperion grabber");
+        if(!isGrabberRunningError) {
+          showErrorDialog();
+        }
+        showToast({ message: apiResMsg ? apiResMsg.split(":")[1].trim() : error?.message, duration: 3000 });
         return Promise.reject(error);
       }
     );

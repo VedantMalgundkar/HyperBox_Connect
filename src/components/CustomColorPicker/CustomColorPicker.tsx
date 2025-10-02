@@ -58,7 +58,7 @@ export default function CustomColorPicker({ isHdmiOverriden, isItOkayToCallApi, 
       const res = await applyColor(rgbArray);
       onColorClearOrChange();
     } catch (error: any) {
-      console.error("applyColor failed:", error);
+      console.error("applyColor failed:", error?.response?.data?.error);
 
       Toast.show({
         type: 'error',
@@ -68,8 +68,8 @@ export default function CustomColorPicker({ isHdmiOverriden, isItOkayToCallApi, 
       });
 
       // fallback to black
-      currentColor.value = "#000000";
-      setResultColor("#000000");
+      currentColor.value = customSwatches[0];
+      setResultColor(customSwatches[0]);
     }
   }
 
@@ -151,11 +151,11 @@ export default function CustomColorPicker({ isHdmiOverriden, isItOkayToCallApi, 
       <View style={[colorPickerStyle.pickerContainer,{backgroundColor:theme.colors.surfaceVariant}]}>
         {
           isHdmiOverriden && (
-          <TouchableOpacity onPress={handleClearColor}>
+          <View onTouchEnd={handleClearColor}>
             <Text style={{ color: theme.colors.onPrimary, backgroundColor: theme.colors.primary, position:"absolute", top:-12, right:-12, padding: 5, borderRadius: 5, fontSize:10}}>
               Switch to HDMI
             </Text>
-          </TouchableOpacity>
+          </View>
           )
         }
         
