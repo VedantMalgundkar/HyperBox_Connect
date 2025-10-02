@@ -34,6 +34,7 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
     children,
     okText = "OK",
     onOk,
+    onCancel,
     cancelText = "Cancel",
     showCancel = true,
     loading = false,
@@ -71,8 +72,8 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
                     shouldShowActions && (
                         <Dialog.Actions>
                             {
-                                showCancel && (
-                                    <Button onPress={onDismiss}>{cancelText}</Button>
+                                showCancel && onCancel && (
+                                    <Button onPress={onCancel}>{cancelText}</Button>
                                 )
                             }
                             {onOk && (

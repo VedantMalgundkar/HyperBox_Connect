@@ -501,6 +501,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
         <CommonDialog
           visible={isPermissionPopUpOpen}
           onDismiss={() => setIsPermissionPopUpOpen(false)}
+          onCancel={() => setIsPermissionPopUpOpen(false)}
           title="Permission required"
           bodyText="Please enable Nearby Devices and Location permissions in Settings."
           okText="Open Settings"

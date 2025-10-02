@@ -13,13 +13,14 @@ import { useTheme } from 'react-native-paper';
 
 type CustomColorPickerProps = {
   isHdmiOverriden: boolean;
+  isItOkayToCallApi: (action: () => void) => boolean;
   onColorClearOrChange: () => void;
 };
 
 // generate 6 random colors for swatches
 const customSwatches = new Array(6).fill('#fff').map(() => colorKit.randomRgbColor().hex());
 
-export default function CustomColorPicker({ isHdmiOverriden, onColorClearOrChange }: CustomColorPickerProps) {
+export default function CustomColorPicker({ isHdmiOverriden, isItOkayToCallApi, onColorClearOrChange }: CustomColorPickerProps) {
   const [resultColor, setResultColor] = useState(customSwatches[0]);
 
   const {applyColor, getCurrentActiveInput, stopEffect} = useLedApi();
@@ -94,7 +95,12 @@ export default function CustomColorPicker({ isHdmiOverriden, onColorClearOrChang
 
     console.log("RGB Array:", rgbArray);
 
-    callColorApi(rgbArray);
+    const isitOkay = isItOkayToCallApi(() => callColorApi(rgbArray));
+
+    if (isitOkay) {
+      callColorApi(rgbArray);
+    }
+
   };
 
   const fetchCurrentInputSource = async () => {
@@ -129,8 +135,12 @@ export default function CustomColorPicker({ isHdmiOverriden, onColorClearOrChang
   const handleCustomSwatchePress = (swatch: string) => {
     currentColor.value = swatch;
     setResultColor(swatch);
-    const rbgArray = hexToRgb(swatch);
-    callColorApi(rbgArray);
+    const rgbArray = hexToRgb(swatch);
+    const isitOkay = isItOkayToCallApi(() => callColorApi(rgbArray));
+
+    if (isitOkay) {
+      callColorApi(rgbArray);
+    }
   };
 
   useEffect(() => {

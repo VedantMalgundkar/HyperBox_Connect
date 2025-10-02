@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Dispatch, SetStateAction } from 'react';
 import { Button, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { useLedApi } from '../api/ledApi';
@@ -7,61 +7,18 @@ import { useConnection } from "../api/ConnectionContext";
 import { isEmptyObject } from '../utils/helper';
 
 import { useTheme } from 'react-native-paper';
-
-export interface Priority {
-  active: boolean;
-  componentId: "VIDEOGRABBER" | "COLOR" | "PROTOSERVER" | "EFFECT";
-  origin: string;
-  owner?: string;
-  priority: number;
-  visible: boolean;
-  isFallBack?: boolean;
-
-  value?: {
-    HSL?: number[];
-    RGB?: number[];
-  };
-}
-
-export interface InputTile extends Priority {
-  key: string;
-  label?: string;
-  icon?: React.ReactNode;
-}
-
-export interface WsBaseResponse {
-  command: string;
-  success: boolean;
-  tan: number;
-}
-
-// priorities-update
-export interface WsPrioritiesUpdate extends WsBaseResponse {
-  command: "priorities-update";
-  data: {
-    priorities: Priority[];
-    priorities_autoselect: boolean;
-  };
-}
-
-// ledcolors-ledstream-update
-export interface WsLedStreamUpdate extends WsBaseResponse {
-  command: "ledcolors-ledstream-update";
-  result: {
-    leds: number[];
-  };
-}
-
-export type WsResponse =
-  | WsPrioritiesUpdate
-  | WsLedStreamUpdate
+import { Priority, InputTile, WsResponse } from '../types/wsTypes';
 
 export type InputSourceDashBoardProps = {
   containerStyle?: ViewStyle;
   boxStyle?: ViewStyle;
   labelStyle?: TextStyle;
   gap?: number;
-  onHdmiOverride: (isHdmiConnected: boolean) => void;
+  // isHdmiOn: boolean;
+  currentInput: Priority | null;
+  setCurrentInput: Dispatch<SetStateAction<Priority | null>>;
+  onHdmiInputChange: (isHdmiConnected: boolean) => void; 
+  // onHdmiOverride: (isHdmiConnected: boolean) => void;
 };
 
 interface LedPositionData {
@@ -106,13 +63,17 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   boxStyle,
   labelStyle,
   gap = 12,
-  onHdmiOverride,
+  // isHdmiOn,
+  currentInput,
+  setCurrentInput,
+  onHdmiInputChange,
+  // onHdmiOverride,
 }) => {
   const ledPositionRef = useRef<LedPositionData[] | null>(null);
   const { ws } = useConnection();
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
-  const [isHdmiOn, setHdmiOn] = useState<boolean>(false);
+  
 
   const tiles: [InputTile, InputTile, InputTile] = [
     {
@@ -153,7 +114,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   ];
 
   // Track current selected input
-  const [currentInput, setCurrentInput] = useState<Priority | null>(null);
+  // const [currentInput, setCurrentInput] = useState<Priority | null>(null);
 
   const { getLedPositionData: fetchLedPosition, getCurrentActiveInput } = useLedApi();
 
@@ -425,7 +386,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
           // console.log("falback check >>>",isFallback);
 
           if (isFallback !== undefined) {
-            setHdmiOn(!isFallback);
+            onHdmiInputChange(!isFallback);
           }
 
           setCurrentInput(prev => {
@@ -474,16 +435,16 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   //   }
   // };
 
-  useEffect(()=>{
-    if(!currentInput) {
-      return;
-    }
-    if(currentInput.componentId !== "VIDEOGRABBER" && isHdmiOn) {
-      onHdmiOverride(true);
-    } else {
-      onHdmiOverride(false);
-    }
-  },[isHdmiOn, currentInput])
+  // useEffect(()=>{
+  //   if(!currentInput) {
+  //     return;
+  //   }
+  //   if(currentInput.componentId !== "VIDEOGRABBER" && isHdmiOn) {
+  //     onHdmiOverride(true);
+  //   } else {
+  //     onHdmiOverride(false);
+  //   }
+  // },[isHdmiOn, currentInput])
 
   return (
     <View style={[styles.row, { columnGap: gap }, containerStyle]}>

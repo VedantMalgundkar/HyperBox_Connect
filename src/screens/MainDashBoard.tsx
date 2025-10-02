@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import BrightnessSlider from "../components/BrightnessSlider";
 import EffectTileContainer from "../components/EffectsContainer/EffectsContainer";
 import InputSourceDashBoard from "../components/InputSourceDashBoard";
-import { useState, useEffect, useLayoutEffect, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { Button, SafeAreaView, ScrollView, TouchableOpacity, View, Text, Dimensions } from "react-native";
 import CustomColorPicker from "../components/CustomColorPicker/CustomColorPicker";
 import { commonStyles } from "../styles/common";
@@ -22,6 +22,8 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { RootDrawerParamList } from '../navigation';
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Priority } from '../types/wsTypes';
+import { CommonDialog } from '../components/CommonDialog';
 
 // type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 // type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
@@ -37,7 +39,28 @@ const MainDashBoard = () => {
   const [isChangeDeviceDrawerOpen, setIsChangeDeviceDrawerOpen] = useState(false);
   const [isDeviceNameUpdating, setDeviceNameUpdating] = useState(false);
   const [mac, setMac] = useState<string|undefined>(undefined);
-  const [isHdmiOverridden, setisHdmiOverridden] = useState<boolean>(false);
+  // const [isHdmiOverridden, setisHdmiOverridden] = useState<boolean>(false);
+  const [isHdmiOn, setHdmiOn] = useState<boolean>(false);
+  const [currentInput, setCurrentInput] = useState<Priority | null>(null);
+  
+  const isHdmiOverridden = currentInput ? ( currentInput.componentId !== "VIDEOGRABBER" && isHdmiOn ) : false
+  
+  const [hasUserAgreedToOverrideHdmiPermenent, setHasUserAgreedToOverrideHdmiPermenent] = useState<boolean>(false);
+
+  const [showOverridePopup, setShowOverridePopup] = useState<boolean>(false);
+
+  const pendingActionRef = useRef<null | (() => void)>(null);
+
+  const isItOkayToCallApi = (action: () => void) => {
+    if (!isHdmiOn || hasUserAgreedToOverrideHdmiPermenent) {
+      return true; // safe to run immediately
+    }
+
+    // Store the action for later execution (doesn't trigger re-render)
+    pendingActionRef.current = action;
+    setShowOverridePopup(true);
+    return false;
+  };
 
   const theme = useTheme(); // Paper theme
   const { getMac } = useSysApi();
@@ -47,6 +70,10 @@ const MainDashBoard = () => {
     if(mac) {
       navigation.navigate("WifiScanner",{deviceId: mac, isBluetoothConnected: false})
     }    
+  }
+
+  const handleHdmiInputChnage = (value:boolean) => {
+    setHdmiOn(value);
   }
 
   const openDrawer = () => {
@@ -59,8 +86,16 @@ const MainDashBoard = () => {
     }
   }; 
 
-  const handleHdmiOverride = (value:boolean) => {
-    setisHdmiOverridden(value)
+  // const handleHdmiOverride = (value:boolean) => {
+  //   setisHdmiOverridden(value)
+  // }
+
+  const handleOverPopUpActions = () => {
+    setShowOverridePopup(false);
+    if (pendingActionRef.current) {
+      pendingActionRef.current(); // run saved API call
+      pendingActionRef.current = null;
+    }
   }
 
   useLayoutEffect(() => {
@@ -162,6 +197,17 @@ const MainDashBoard = () => {
       }, [])
     );
 
+  // useEffect(()=>{
+  //   if(!currentInput) {
+  //     return;
+  //   }
+  //   if(currentInput.componentId !== "VIDEOGRABBER" && isHdmiOn) {
+  //     setisHdmiOverridden(true);
+  //   } else {
+  //     setisHdmiOverridden(false);
+  //   }
+  // },[isHdmiOn, currentInput])
+
   return (
     <SafeAreaView style={[commonStyles.container, {backgroundColor:theme.colors.surface}]}>
       <View style={{ flex: 1 }}>
@@ -186,17 +232,32 @@ const MainDashBoard = () => {
         >
           <HyperhdrScannerContent onConnect={closeDrawer} onDeviceNameUpdating={(loadingState) => setDeviceNameUpdating(loadingState)} />
         </CommonModal>
-
       </View>
 
 
       <ScrollView contentContainerStyle={commonStyles.scrollContent}>
         {/* <Button title="Go Back" onPress={() => openDrawer()} /> */}
         <BrightnessSlider />
-        <InputSourceDashBoard onHdmiOverride={handleHdmiOverride}/>
-        <CustomColorPicker isHdmiOverriden={isHdmiOverridden} onColorClearOrChange={() => setHasCleared((prev) => !prev)} />
+        {/* <InputSourceDashBoard currentInput={currentInput} setCurrentInput={setCurrentInput} isHdmiOn={isHdmiOn} onHdmiInputChange={handleHdmiInputChnage} onHdmiOverride={handleHdmiOverride}/> */}
+        <InputSourceDashBoard currentInput={currentInput} setCurrentInput={setCurrentInput} onHdmiInputChange={handleHdmiInputChnage}/>
+        <CustomColorPicker isItOkayToCallApi={isItOkayToCallApi} isHdmiOverriden={isHdmiOverridden} onColorClearOrChange={() => setHasCleared((prev) => !prev)} />
         <EffectTileContainer hasCleared={hasCleared} />
       </ScrollView>
+
+      <CommonDialog
+        visible={showOverridePopup}
+        onDismiss={()=>{
+          setShowOverridePopup(false)
+        }}
+        title="want to overrider hdmi input?"
+        onOk={()=>handleOverPopUpActions()}
+        onCancel={()=>{
+          setHasUserAgreedToOverrideHdmiPermenent(true);
+          handleOverPopUpActions()
+        }}
+        cancelText="Dont ask again"
+      />
+      
     </SafeAreaView>
   );
 }

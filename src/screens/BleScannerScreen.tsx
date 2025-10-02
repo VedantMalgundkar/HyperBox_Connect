@@ -316,6 +316,7 @@ const BLEScanner = () => {
       <CommonDialog
         visible = {isCameraPermissionPopupOpen}
         onDismiss = {()=>setIsCameraPermissionPopupOpen(false)}
+        onCancel = {()=>setIsCameraPermissionPopupOpen(false)}
         title = "Permission required"
         bodyText = "Please enable camera permission in Settings."
         okText = "Open Settings"
@@ -326,6 +327,7 @@ const BLEScanner = () => {
       <CommonDialog
         visible = {isPermissionPopUpOpen}
         onDismiss = {()=>setIsPermissionPopUpOpen(false)}
+        onCancel = {()=>setIsPermissionPopUpOpen(false)}
         title = "Permission required"
         bodyText = "Please enable Nearby Devices and Location permissions in Settings."
         okText = "Open Settings"
