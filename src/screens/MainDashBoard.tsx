@@ -24,6 +24,9 @@ import { RootDrawerParamList } from '../navigation';
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Priority } from '../types/wsTypes';
 import { CommonDialog } from '../components/CommonDialog';
+import { useConnection } from '../api/ConnectionContext';
+import { Text as PaperText } from "react-native-paper";
+import { extractHostFromUrl } from '../utils/helper';
 
 // type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 // type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
@@ -47,6 +50,10 @@ const MainDashBoard = () => {
   const [hasUserAgreedToOverrideHdmiPermenent, setHasUserAgreedToOverrideHdmiPermenent] = useState<boolean>(false);
 
   const [showOverridePopup, setShowOverridePopup] = useState<boolean>(false);
+
+  const [isGrabberPopUpOpen, setIsGrabberPopupOpen] = useState<boolean>(false);
+
+  const { baseUrl } = useConnection();
 
   const pendingActionRef = useRef<null | (() => void)>(null);
 
@@ -237,7 +244,7 @@ const MainDashBoard = () => {
         {/* <Button title="Go Back" onPress={() => openDrawer()} /> */}
         <BrightnessSlider />
         {/* <InputSourceDashBoard currentInput={currentInput} setCurrentInput={setCurrentInput} isHdmiOn={isHdmiOn} onHdmiInputChange={handleHdmiInputChnage} onHdmiOverride={handleHdmiOverride}/> */}
-        <InputSourceDashBoard currentInput={currentInput} setCurrentInput={setCurrentInput} onHdmiInputChange={handleHdmiInputChnage}/>
+        <InputSourceDashBoard onGrabberAboutClick={()=>setIsGrabberPopupOpen(true)} currentInput={currentInput} setCurrentInput={setCurrentInput} onHdmiInputChange={handleHdmiInputChnage}/>
         <CustomColorPicker isItOkayToCallApi={isItOkayToCallApi} isHdmiOverriden={isHdmiOverridden} onColorClearOrChange={() => setHasCleared((prev) => !prev)} />
         <EffectTileContainer isItOkayToCallApi={isItOkayToCallApi} hasCleared={hasCleared} />
       </ScrollView>
@@ -256,6 +263,57 @@ const MainDashBoard = () => {
         }}
         showCancel={isGrabberRunning? false: true}
       />
+
+      <CommonDialog
+        visible={isGrabberPopUpOpen}
+        onDismiss={() => setIsGrabberPopupOpen(false)}
+        title="Connect To TV"
+        showCancel={false}
+      >
+        <View
+          style={{
+            backgroundColor: theme.colors.secondaryContainer,
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 16,
+            flexDirection: "column",
+            gap: 15,
+          }}
+        >
+          {baseUrl && (
+            <View>
+              <PaperText style={{ fontSize: 14, marginBottom: 3, color: theme.colors.onSurfaceVariant }}>
+                Hyperion Host :
+              </PaperText>
+              <PaperText style={{ fontSize: 16, paddingLeft: 3 }}>
+                {extractHostFromUrl(baseUrl)}
+              </PaperText>
+            </View>
+          )}
+
+          <View>
+            <PaperText style={{ fontSize: 14, marginBottom: 3, color: theme.colors.onSurfaceVariant }}>
+              Hyperion Protobuf Port :
+            </PaperText>
+            <PaperText style={{ fontSize: 16, paddingLeft: 3 }}>
+              12345
+            </PaperText>
+          </View>
+        </View>
+        <View style={[commonStyles.column, { gap: 5 }]}>
+          {[
+            "• Open the Hyperion Grabber app on your TV.",
+            "• Tap the three dots to open Settings.",
+            "• Enter the Host and Port shown above.",
+            "• Tap Connect to finish setup.",
+          ].map((text, index) => (
+            <PaperText key={index} style={{ fontSize: 13 }}>
+              {text}
+            </PaperText>
+          ))}
+        </View>
+      </CommonDialog>
+
     </SafeAreaView>
   );
 }

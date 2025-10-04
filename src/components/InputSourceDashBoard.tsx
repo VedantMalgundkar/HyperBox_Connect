@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, Dispatch, SetStateAction } from 'react';
-import { Button, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { Button, StyleSheet, Text, TextStyle, View, ViewStyle, TouchableOpacity } from 'react-native';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { useLedApi } from '../api/ledApi';
 import { commonStyles, theme } from '../styles/common';
@@ -19,6 +19,7 @@ export type InputSourceDashBoardProps = {
   setCurrentInput: Dispatch<SetStateAction<Priority | null>>;
   onHdmiInputChange: (isHdmiConnected: boolean) => void; 
   // onHdmiOverride: (isHdmiConnected: boolean) => void;
+  onGrabberAboutClick: () => void;
 };
 
 interface LedPositionData {
@@ -68,6 +69,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   setCurrentInput,
   onHdmiInputChange,
   // onHdmiOverride,
+  onGrabberAboutClick,
 }) => {
   const ledPositionRef = useRef<LedPositionData[] | null>(null);
   const { ws } = useConnection();
@@ -465,6 +467,11 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
               boxStyle,
             ]}
           >
+            {tile.componentId === "PROTOSERVER" && (
+              <TouchableOpacity style={styles.aboutIcon} onPress={onGrabberAboutClick}>
+                <MaterialDesignIcons color={theme.colors.primary} name="information" size={23} />
+              </TouchableOpacity>
+            )}
             <View style={[styles.content, commonStyles.center]}>
               {tile!.icon ? (
                 <View style={styles.iconWrap}>
@@ -523,6 +530,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 5,
     ...commonStyles.bRadius,
+    position:"relative",
   },
   boxSelected: {
     backgroundColor: "#007BFF",
@@ -539,5 +547,10 @@ const styles = StyleSheet.create({
     color: "#0B0F14",
     textAlign: "center",
   },
+  aboutIcon: {
+    position:"absolute",
+    right: -4,
+    top: -6,
+  }
 });
 

@@ -30,6 +30,13 @@ export const changePortOrProtoOfUrl = (
   return result;
 };
 
+export const extractHostFromUrl = (source: string): string => {
+  return source
+    .replace(/^[a-zA-Z]+:\/\//, "") // remove protocol
+    .replace(/:\d+$/, "")           // remove trailing port
+    .replace(/\/.*$/, "");          // remove path
+};
+
 export const openLinkInBrowser = async (url: string) => {
   try {
     const supported = await Linking.canOpenURL(url);
