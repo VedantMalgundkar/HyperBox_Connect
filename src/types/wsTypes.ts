@@ -42,6 +42,33 @@ export interface WsLedStreamUpdate extends WsBaseResponse {
   };
 }
 
+// protoServer port
+export interface WsConfigGetConfig extends WsBaseResponse {
+  command: "config-getconfig";
+  info: {
+    protoServer: {
+      enable: boolean;
+      port: number;
+      timeout: number;
+    };
+  };
+}
+
+export interface WsConfigError extends WsBaseResponse {
+  command: "config" | "authorize";
+  error: string;
+}
+
+export interface WsLoginResp extends WsBaseResponse {
+  command: "authorize-login";
+  info: {
+    token: string;
+  };
+}
+
 export type WsResponse =
   | WsPrioritiesUpdate
   | WsLedStreamUpdate
+  | WsConfigGetConfig
+  | WsConfigError
+  | WsLoginResp

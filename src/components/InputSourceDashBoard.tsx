@@ -8,6 +8,7 @@ import { isEmptyObject } from '../utils/helper';
 
 import { useTheme } from 'react-native-paper';
 import { Priority, InputTile, WsResponse } from '../types/wsTypes';
+import { getHyperHdrPassword } from '../services/storage/regularStorage';
 
 export type InputSourceDashBoardProps = {
   containerStyle?: ViewStyle;
@@ -19,7 +20,10 @@ export type InputSourceDashBoardProps = {
   setCurrentInput: Dispatch<SetStateAction<Priority | null>>;
   onHdmiInputChange: (isHdmiConnected: boolean) => void; 
   // onHdmiOverride: (isHdmiConnected: boolean) => void;
+  onProtoPortChange: (port: number) => void;
   onGrabberAboutClick: () => void;
+  onUnAuthError: () => void;
+  getHyperHdrLogin: (action: (password: string) => void) => void;
 };
 
 interface LedPositionData {
@@ -69,7 +73,10 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   setCurrentInput,
   onHdmiInputChange,
   // onHdmiOverride,
+  onProtoPortChange,
   onGrabberAboutClick,
+  onUnAuthError,
+  getHyperHdrLogin,
 }) => {
   const ledPositionRef = useRef<LedPositionData[] | null>(null);
   const { ws } = useConnection();
@@ -298,6 +305,16 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
     }
   };
 
+  const loginToHyperHdr = (password: string) => {
+    console.log("hyperHdr password >>>>",password);
+
+    sendMessage({
+      command: "authorize",
+      subcommand: "login",
+      password,
+    })
+  }
+
   useEffect(() => {
     const fetchLedData = async () => {
       try {
@@ -308,6 +325,10 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
     };
     fetchLedData();
     fetchCurrentInputSource()
+    
+    getHyperHdrLogin(loginToHyperHdr); // for mainDashboard to call if default password changed.
+
+    loginToHyperHdr(getHyperHdrPassword());
 
     sendMessage({
       command: "ledcolors",
@@ -411,6 +432,34 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
           });
         }
 
+        break;
+      
+      case "config-getconfig":
+        onProtoPortChange(wsResponse.info.protoServer.port)
+        break;
+
+      case "authorize":
+      case "config":
+        const error = wsResponse.error.toLowerCase();
+        console.log("443 >>",error);
+        if(error.includes("no authorization")|| error.includes("validation")) {
+          console.log("login is required.")
+          onUnAuthError();
+        }
+        break;
+
+      case "authorize-login":
+        const isLoggedInSuccessfully = wsResponse.success && wsResponse.info.token;
+
+        console.log({isLoggedInSuccessfully}, wsResponse);
+
+        if(isLoggedInSuccessfully) {
+          sendMessage({
+            command:"config", 
+            tan:1,
+            subcommand:"getconfig"
+          })
+        }
         break;
     }
   }

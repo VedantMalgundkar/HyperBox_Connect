@@ -3,6 +3,8 @@ import { Device } from 'react-native-ble-plx';
 
 const RECENT_DEVICES_KEY = 'recent_connected_devices';
 const MAX_RECENT_DEVICES = 5;
+const HYPERHDR_PASSWORD_KEY = "hyperhdr_password";
+const DEFAULT_HYPERHDR_PASSWORD = "";
 
 // Initialize MMKV storage
 export const storage = new MMKV();
@@ -67,4 +69,15 @@ export const removeRecentDevice = (deviceId: string): StoredDevice[] => {
     console.error('Error removing recent device:', error);
     return [];
   }
+};
+
+export const getHyperHdrPassword = () => {
+  const password = storage.getString(HYPERHDR_PASSWORD_KEY);
+
+  if (!password) return DEFAULT_HYPERHDR_PASSWORD; // fallback
+  return password;
+};
+
+export const setHyperHdrPassword = (password: string) => {
+  storage.set(HYPERHDR_PASSWORD_KEY, password);
 };

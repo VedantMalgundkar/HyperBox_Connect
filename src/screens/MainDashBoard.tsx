@@ -26,7 +26,8 @@ import { Priority } from '../types/wsTypes';
 import { CommonDialog } from '../components/CommonDialog';
 import { useConnection } from '../api/ConnectionContext';
 import { Text as PaperText } from "react-native-paper";
-import { extractHostFromUrl } from '../utils/helper';
+import { GrabberInstructions } from '../components/GrabberInstructions';
+import {TextInput} from 'react-native-paper';
 
 // type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 // type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
@@ -44,6 +45,10 @@ const MainDashBoard = () => {
   const [mac, setMac] = useState<string|undefined>(undefined);
   const [isHdmiOn, setHdmiOn] = useState<boolean>(false);
   const [currentInput, setCurrentInput] = useState<Priority | null>(null);
+  const [protoPort, setProtoPort] = useState<number | undefined>();
+  const [didWeGetUnauthorizationError, SetDidWeGetUnauthorizationError] = useState<boolean>(false);
+  const [hyperHdrPassword, setHyperHdrPassword] = useState<string>("");
+  const [showHyperHdrPassword, setShowHyperHdrPassword] = useState<boolean>(false);
   
   const isHdmiOverridden = currentInput ? (!["PROTOSERVER", "VIDEOGRABBER"].includes(currentInput.componentId) && isHdmiOn)  : false
   
@@ -52,10 +57,10 @@ const MainDashBoard = () => {
   const [showOverridePopup, setShowOverridePopup] = useState<boolean>(false);
 
   const [isGrabberPopUpOpen, setIsGrabberPopupOpen] = useState<boolean>(false);
-
   const { baseUrl } = useConnection();
-
+  
   const pendingActionRef = useRef<null | (() => void)>(null);
+  const hyperHdrLogin = useRef<null | ((password: string) => void)>(null);
 
   const isGrabberRunning = currentInput?.componentId == "PROTOSERVER";
 
@@ -80,6 +85,10 @@ const MainDashBoard = () => {
     pendingActionRef.current = action;
     setShowOverridePopup(true);
     return false;
+  };
+  
+  const getHyperHdrLoginFromChild = (action: (password: string) => void) => {
+    hyperHdrLogin.current = action;
   };
 
   const theme = useTheme(); // Paper theme
@@ -112,6 +121,18 @@ const MainDashBoard = () => {
       pendingActionRef.current(); // run saved API call
       pendingActionRef.current = null;
     }
+  }
+
+  const handleProtoPortChange = (port: number) => {
+    setProtoPort(port);
+  }
+
+  const showPasswordInput = () => {
+    SetDidWeGetUnauthorizationError(true);
+  }
+
+  const hidePasswordInput = () => {
+    SetDidWeGetUnauthorizationError(false);
   }
 
   useLayoutEffect(() => {
@@ -244,7 +265,7 @@ const MainDashBoard = () => {
         {/* <Button title="Go Back" onPress={() => openDrawer()} /> */}
         <BrightnessSlider />
         {/* <InputSourceDashBoard currentInput={currentInput} setCurrentInput={setCurrentInput} isHdmiOn={isHdmiOn} onHdmiInputChange={handleHdmiInputChnage} onHdmiOverride={handleHdmiOverride}/> */}
-        <InputSourceDashBoard onGrabberAboutClick={()=>setIsGrabberPopupOpen(true)} currentInput={currentInput} setCurrentInput={setCurrentInput} onHdmiInputChange={handleHdmiInputChnage}/>
+        <InputSourceDashBoard getHyperHdrLogin={getHyperHdrLoginFromChild} onUnAuthError={showPasswordInput} onProtoPortChange={handleProtoPortChange} onGrabberAboutClick={()=>setIsGrabberPopupOpen(true)} currentInput={currentInput} setCurrentInput={setCurrentInput} onHdmiInputChange={handleHdmiInputChnage}/>
         <CustomColorPicker isItOkayToCallApi={isItOkayToCallApi} isHdmiOverriden={isHdmiOverridden} onColorClearOrChange={() => setHasCleared((prev) => !prev)} />
         <EffectTileContainer isItOkayToCallApi={isItOkayToCallApi} hasCleared={hasCleared} />
       </ScrollView>
@@ -267,51 +288,37 @@ const MainDashBoard = () => {
       <CommonDialog
         visible={isGrabberPopUpOpen}
         onDismiss={() => setIsGrabberPopupOpen(false)}
-        title="Connect To TV"
+        title={didWeGetUnauthorizationError? "Enter WebUI password" : "Connect To TV"}
+        subtitle={didWeGetUnauthorizationError? "Enter your HyperHDR WebUI password \n(it may have changed)." : undefined}
         showCancel={false}
+        onOk={didWeGetUnauthorizationError? () => hyperHdrLogin?.current?.(hyperHdrPassword): undefined}
+        okText='Login'
       >
-        <View
-          style={{
-            backgroundColor: theme.colors.secondaryContainer,
-            padding: 12,
-            borderRadius: 8,
-            marginBottom: 16,
-            flexDirection: "column",
-            gap: 15,
-          }}
-        >
-          {baseUrl && (
-            <View>
-              <PaperText style={{ fontSize: 14, marginBottom: 3, color: theme.colors.onSurfaceVariant }}>
-                Hyperion Host :
-              </PaperText>
-              <PaperText style={{ fontSize: 16, paddingLeft: 3 }}>
-                {extractHostFromUrl(baseUrl)}
-              </PaperText>
+          {didWeGetUnauthorizationError ? (
+            <View>       
+              <TextInput
+                mode="flat"
+                label="Password"
+                defaultValue={hyperHdrPassword}
+                onChangeText={setHyperHdrPassword}
+                secureTextEntry={!showHyperHdrPassword}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (hyperHdrLogin.current) {
+                    hyperHdrLogin.current(hyperHdrPassword);
+                  }
+                }}
+                right={
+                  <TextInput.Icon
+                    icon={showHyperHdrPassword ? "eye-off" : "eye"}
+                    onPress={() => setShowHyperHdrPassword((priv)=>!priv)}
+                  />
+                }
+              />
             </View>
+          ) : (
+            <GrabberInstructions baseUrl={baseUrl} protoPort={protoPort} />
           )}
-
-          <View>
-            <PaperText style={{ fontSize: 14, marginBottom: 3, color: theme.colors.onSurfaceVariant }}>
-              Hyperion Protobuf Port :
-            </PaperText>
-            <PaperText style={{ fontSize: 16, paddingLeft: 3 }}>
-              12345
-            </PaperText>
-          </View>
-        </View>
-        <View style={[commonStyles.column, { gap: 5 }]}>
-          {[
-            "• Open the Hyperion Grabber app on your TV.",
-            "• Tap the three dots to open Settings.",
-            "• Enter the Host and Port shown above.",
-            "• Tap Connect to finish setup.",
-          ].map((text, index) => (
-            <PaperText key={index} style={{ fontSize: 13 }}>
-              {text}
-            </PaperText>
-          ))}
-        </View>
       </CommonDialog>
 
     </SafeAreaView>
