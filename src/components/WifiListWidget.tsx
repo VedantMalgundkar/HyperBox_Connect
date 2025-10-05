@@ -138,20 +138,29 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
   const responseListener = () => {
     const handleRecievedData = (data: bleResponse) => {
       console.log('data received from ble >>', data);
+      const anyOnGoingProcess = data.status.toLowerCase().endsWith("ing");
+      const isSuccess = data.status == 'success';
 
-      if (data.status.toLowerCase().endsWith("ing")) {
+      let msg = data?.message; 
+      if(data?.error) {
+        msg = data.error
+      }
+      
+      if (anyOnGoingProcess) {
         setWifiNotifyLoading(true);
       }
 
-      if (data.status === 'success') {
+      if (isSuccess && !anyOnGoingProcess) {
         setWifiNotifyLoading(false);
-        loadWifiList();
-      } else {
-        if (data?.message) {
-          showToast({ message: data.message, duration: 3000 });
-        }
+      }
+      
+      if(msg && !isSuccess) {
+        showToast({ message: msg, duration: 3000 });
       }
 
+      if(isSuccess) {
+        loadWifiList();
+      }
     };
 
     const handleError = (error: Error) => {
