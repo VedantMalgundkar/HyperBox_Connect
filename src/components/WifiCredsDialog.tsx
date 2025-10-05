@@ -3,6 +3,7 @@ import { TextInput } from "react-native-paper";
 import { CommonDialog } from "./CommonDialog";
 import { writeCredentials } from "../services/bleService";
 import { useConnection } from "../api/ConnectionContext";
+import { PaperTextInput } from "./common/PaperTextInput";
 
 type WifiCredsDialogProps = {
   isLoading: boolean;
@@ -20,7 +21,6 @@ export const WifiCredsDialog: React.FC<WifiCredsDialogProps> = ({
   deviceId,
 }) => {
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const { bleManager } = useConnection();
 
   const handleWifiWriteCredentials = async (ssid: string, password: string) => {
@@ -48,24 +48,16 @@ export const WifiCredsDialog: React.FC<WifiCredsDialogProps> = ({
       }}
       loading={isLoading}
     >
-      <TextInput
+      <PaperTextInput
         mode="flat"
         label="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry={!showPassword}
-        returnKeyType="done"
-        onSubmitEditing={() => {
+        defaultValue={password} 
+        onTextChange={setPassword}
+        onSubmit={() => {
           if (ssid) {
             handleWifiWriteCredentials(ssid, password);
           }
         }}
-        right={
-          <TextInput.Icon
-            icon={showPassword ? "eye-off" : "eye"}
-            onPress={() => setShowPassword(!showPassword)}
-          />
-        }
       />
     </CommonDialog>
   );
