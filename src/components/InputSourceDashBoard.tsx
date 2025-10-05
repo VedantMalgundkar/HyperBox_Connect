@@ -23,6 +23,7 @@ export type InputSourceDashBoardProps = {
   onProtoPortChange: (port: number) => void;
   onGrabberAboutClick: () => void;
   onUnAuthError: () => void;
+  onLoginSuccess: () => void;
   getHyperHdrLogin: (action: (password: string) => void) => void;
 };
 
@@ -76,12 +77,15 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   onProtoPortChange,
   onGrabberAboutClick,
   onUnAuthError,
+  onLoginSuccess,
   getHyperHdrLogin,
 }) => {
   const ledPositionRef = useRef<LedPositionData[] | null>(null);
   const { ws } = useConnection();
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
+  const [isLoginSuccessfull, setIsLoginSuccessfull] = useState<boolean| undefined>();
+  const [refreshProtoPort, setRefreshProtoPort] = useState<boolean>(false);
   
 
   const tiles: [InputTile, InputTile, InputTile] = [
@@ -435,7 +439,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
         break;
       
       case "config-getconfig":
-        onProtoPortChange(wsResponse.info.protoServer.port)
+        onProtoPortChange(wsResponse.info.protoServer.port);
         break;
 
       case "authorize":
@@ -444,21 +448,16 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
         console.log("443 >>",error);
         if(error.includes("no authorization")|| error.includes("validation")) {
           console.log("login is required.")
-          onUnAuthError();
+          setIsLoginSuccessfull(false);
         }
         break;
 
       case "authorize-login":
-        const isLoggedInSuccessfully = wsResponse.success && wsResponse.info.token;
-
+        const isLoggedInSuccessfully = !!(wsResponse.success && wsResponse?.info?.token);
         console.log({isLoggedInSuccessfully}, wsResponse);
-
+        setIsLoginSuccessfull(isLoggedInSuccessfully);
         if(isLoggedInSuccessfully) {
-          sendMessage({
-            command:"config", 
-            tan:1,
-            subcommand:"getconfig"
-          })
+          onLoginSuccess();
         }
         break;
     }
@@ -486,16 +485,29 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   //   }
   // };
 
-  // useEffect(()=>{
-  //   if(!currentInput) {
-  //     return;
-  //   }
-  //   if(currentInput.componentId !== "VIDEOGRABBER" && isHdmiOn) {
-  //     onHdmiOverride(true);
-  //   } else {
-  //     onHdmiOverride(false);
-  //   }
-  // },[isHdmiOn, currentInput])
+  const onGrabberAboutClickOverLoaded = () => {
+    onGrabberAboutClick()
+    setRefreshProtoPort((priv)=>!priv);
+  }
+
+  useEffect(() => {
+    if (isLoginSuccessfull == undefined) {
+      return;
+    }
+
+    if (isLoginSuccessfull == true) {
+      sendMessage({
+        command: "config",
+        tan: 1,
+        subcommand: "getconfig"
+      })
+    }
+
+    if (isLoginSuccessfull == false) {
+      onUnAuthError();
+    }
+
+  }, [isLoginSuccessfull, refreshProtoPort])
 
   return (
     <View style={[styles.row, { columnGap: gap }, containerStyle]}>
@@ -517,8 +529,8 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
             ]}
           >
             {tile.componentId === "PROTOSERVER" && (
-              <TouchableOpacity style={styles.aboutIcon} onPress={onGrabberAboutClick}>
-                <MaterialDesignIcons color={theme.colors.primary} name="information" size={23} />
+              <TouchableOpacity style={styles.aboutIcon} onPress={onGrabberAboutClickOverLoaded}>
+                <MaterialDesignIcons color={isSelected ? theme.colors.inversePrimary : theme.colors.primary} name="information" size={23} />
               </TouchableOpacity>
             )}
             <View style={[styles.content, commonStyles.center]}>

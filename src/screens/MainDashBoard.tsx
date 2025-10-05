@@ -27,7 +27,8 @@ import { CommonDialog } from '../components/CommonDialog';
 import { useConnection } from '../api/ConnectionContext';
 import { Text as PaperText } from "react-native-paper";
 import { GrabberInstructions } from '../components/GrabberInstructions';
-import {TextInput} from 'react-native-paper';
+import { PaperTextInput } from '../components/common/PaperTextInput';
+import { setHyperHdrPassword } from '../services/storage/regularStorage';
 
 // type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 // type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
@@ -46,9 +47,8 @@ const MainDashBoard = () => {
   const [isHdmiOn, setHdmiOn] = useState<boolean>(false);
   const [currentInput, setCurrentInput] = useState<Priority | null>(null);
   const [protoPort, setProtoPort] = useState<number | undefined>();
-  const [didWeGetUnauthorizationError, SetDidWeGetUnauthorizationError] = useState<boolean>(false);
-  const [hyperHdrPassword, setHyperHdrPassword] = useState<string>("");
-  const [showHyperHdrPassword, setShowHyperHdrPassword] = useState<boolean>(false);
+  const [isUnauthorizedError, SetIsUnauthorizedError] = useState<boolean>(false);
+  const hyperHdrPassword = useRef<string>("");
   
   const isHdmiOverridden = currentInput ? (!["PROTOSERVER", "VIDEOGRABBER"].includes(currentInput.componentId) && isHdmiOn)  : false
   
@@ -86,6 +86,16 @@ const MainDashBoard = () => {
     setShowOverridePopup(true);
     return false;
   };
+
+  const handleHyperHdrPasswordChange = (newPassword: string) => {
+    hyperHdrPassword.current = newPassword;
+  }
+
+  const handleLoginSuccess = () => {
+    if(hyperHdrPassword?.current) {
+      setHyperHdrPassword(hyperHdrPassword.current.trim())
+    }
+  }
   
   const getHyperHdrLoginFromChild = (action: (password: string) => void) => {
     hyperHdrLogin.current = action;
@@ -125,14 +135,11 @@ const MainDashBoard = () => {
 
   const handleProtoPortChange = (port: number) => {
     setProtoPort(port);
+    SetIsUnauthorizedError(false);
   }
 
   const showPasswordInput = () => {
-    SetDidWeGetUnauthorizationError(true);
-  }
-
-  const hidePasswordInput = () => {
-    SetDidWeGetUnauthorizationError(false);
+    SetIsUnauthorizedError(true);
   }
 
   useLayoutEffect(() => {
@@ -265,7 +272,7 @@ const MainDashBoard = () => {
         {/* <Button title="Go Back" onPress={() => openDrawer()} /> */}
         <BrightnessSlider />
         {/* <InputSourceDashBoard currentInput={currentInput} setCurrentInput={setCurrentInput} isHdmiOn={isHdmiOn} onHdmiInputChange={handleHdmiInputChnage} onHdmiOverride={handleHdmiOverride}/> */}
-        <InputSourceDashBoard getHyperHdrLogin={getHyperHdrLoginFromChild} onUnAuthError={showPasswordInput} onProtoPortChange={handleProtoPortChange} onGrabberAboutClick={()=>setIsGrabberPopupOpen(true)} currentInput={currentInput} setCurrentInput={setCurrentInput} onHdmiInputChange={handleHdmiInputChnage}/>
+        <InputSourceDashBoard onLoginSuccess={handleLoginSuccess} getHyperHdrLogin={getHyperHdrLoginFromChild} onUnAuthError={showPasswordInput} onProtoPortChange={handleProtoPortChange} onGrabberAboutClick={()=>setIsGrabberPopupOpen(true)} currentInput={currentInput} setCurrentInput={setCurrentInput} onHdmiInputChange={handleHdmiInputChnage}/>
         <CustomColorPicker isItOkayToCallApi={isItOkayToCallApi} isHdmiOverriden={isHdmiOverridden} onColorClearOrChange={() => setHasCleared((prev) => !prev)} />
         <EffectTileContainer isItOkayToCallApi={isItOkayToCallApi} hasCleared={hasCleared} />
       </ScrollView>
@@ -288,32 +295,24 @@ const MainDashBoard = () => {
       <CommonDialog
         visible={isGrabberPopUpOpen}
         onDismiss={() => setIsGrabberPopupOpen(false)}
-        title={didWeGetUnauthorizationError? "Enter WebUI password" : "Connect To TV"}
-        subtitle={didWeGetUnauthorizationError? "Enter your HyperHDR WebUI password \n(it may have changed)." : undefined}
+        title={isUnauthorizedError? "Enter WebUI password" : "Connect To TV"}
+        subtitle={isUnauthorizedError? "Enter your HyperHDR WebUI password \n(it may have changed)." : undefined}
         showCancel={false}
-        onOk={didWeGetUnauthorizationError? () => hyperHdrLogin?.current?.(hyperHdrPassword): undefined}
+        onOk={isUnauthorizedError? () => hyperHdrLogin?.current?.(hyperHdrPassword.current): undefined}
         okText='Login'
       >
-          {didWeGetUnauthorizationError ? (
-            <View>       
-              <TextInput
+          {isUnauthorizedError ? (
+            <View style={{paddingTop: 7}}>       
+              <PaperTextInput
                 mode="flat"
                 label="Password"
-                defaultValue={hyperHdrPassword}
-                onChangeText={setHyperHdrPassword}
-                secureTextEntry={!showHyperHdrPassword}
-                returnKeyType="done"
-                onSubmitEditing={() => {
+                defaultValue={hyperHdrPassword.current}
+                onTextChange={handleHyperHdrPasswordChange}
+                onSubmit={() => {
                   if (hyperHdrLogin.current) {
-                    hyperHdrLogin.current(hyperHdrPassword);
+                    hyperHdrLogin.current(hyperHdrPassword.current);
                   }
                 }}
-                right={
-                  <TextInput.Icon
-                    icon={showHyperHdrPassword ? "eye-off" : "eye"}
-                    onPress={() => setShowHyperHdrPassword((priv)=>!priv)}
-                  />
-                }
               />
             </View>
           ) : (
