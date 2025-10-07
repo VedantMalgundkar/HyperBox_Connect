@@ -29,6 +29,7 @@ import { Text as PaperText } from "react-native-paper";
 import { GrabberInstructions } from '../components/GrabberInstructions';
 import { PaperTextInput } from '../components/common/PaperTextInput';
 import { setHyperHdrPassword } from '../services/storage/regularStorage';
+import { useToast } from '../api/ToastProvider';
 
 // type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 // type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
@@ -61,6 +62,8 @@ const MainDashBoard = () => {
   
   const pendingActionRef = useRef<null | (() => void)>(null);
   const hyperHdrLogin = useRef<null | ((password: string) => void)>(null);
+
+  const showToast = useToast();
 
   const isGrabberRunning = currentInput?.componentId == "PROTOSERVER";
 
@@ -140,6 +143,17 @@ const MainDashBoard = () => {
 
   const showPasswordInput = () => {
     SetIsUnauthorizedError(true);
+  }
+
+  const handlePasswordSubmit = () => {
+    if (hyperHdrPassword.current && hyperHdrPassword.current.length < 8) {
+      showToast({ message: "Min 8 characters required", duration: 3000 });
+      return;
+    }
+    
+    if (hyperHdrLogin.current) {
+      hyperHdrLogin.current(hyperHdrPassword.current);
+    }
   }
 
   useLayoutEffect(() => {
@@ -298,7 +312,7 @@ const MainDashBoard = () => {
         title={isUnauthorizedError? "Enter WebUI password" : "Connect To TV"}
         subtitle={isUnauthorizedError? "Enter your HyperHDR WebUI password \n(it may have changed)." : undefined}
         showCancel={false}
-        onOk={isUnauthorizedError? () => hyperHdrLogin?.current?.(hyperHdrPassword.current): undefined}
+        onOk={isUnauthorizedError? handlePasswordSubmit : undefined}
         okText='Login'
       >
           {isUnauthorizedError ? (
@@ -308,11 +322,7 @@ const MainDashBoard = () => {
                 label="Password"
                 defaultValue={hyperHdrPassword.current}
                 onTextChange={handleHyperHdrPasswordChange}
-                onSubmit={() => {
-                  if (hyperHdrLogin.current) {
-                    hyperHdrLogin.current(hyperHdrPassword.current);
-                  }
-                }}
+                onSubmit={handlePasswordSubmit}
               />
             </View>
           ) : (

@@ -9,6 +9,7 @@ import { isEmptyObject } from '../utils/helper';
 import { useTheme } from 'react-native-paper';
 import { Priority, InputTile, WsResponse } from '../types/wsTypes';
 import { getHyperHdrPassword } from '../services/storage/regularStorage';
+import { useToast } from '../api/ToastProvider';
 
 export type InputSourceDashBoardProps = {
   containerStyle?: ViewStyle;
@@ -86,6 +87,7 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
   const theme = useTheme();
   const [isLoginSuccessfull, setIsLoginSuccessfull] = useState<boolean| undefined>();
   const [refreshProtoPort, setRefreshProtoPort] = useState<boolean>(false);
+  const showToast  = useToast()
   
 
   const tiles: [InputTile, InputTile, InputTile] = [
@@ -458,6 +460,8 @@ const InputSourceDashBoard: React.FC<InputSourceDashBoardProps> = ({
         setIsLoginSuccessfull(isLoggedInSuccessfully);
         if(isLoggedInSuccessfully) {
           onLoginSuccess();
+        } else {
+          showToast({ message: "Incorrect Password", duration: 3000 });
         }
         break;
     }
