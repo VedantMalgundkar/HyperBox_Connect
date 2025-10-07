@@ -30,7 +30,7 @@ import { GrabberInstructions } from '../components/GrabberInstructions';
 import { PaperTextInput } from '../components/common/PaperTextInput';
 import { setHyperHdrPassword } from '../services/storage/regularStorage';
 import { useToast } from '../api/ToastProvider';
-
+import WifiIconButton from '../components/WifiIconButton';
 // type Props = NativeStackScreenProps<RootStackParamList, 'MainDashBoard'>;
 // type MainDashBoardDrawerProp = DrawerNavigationProp<RootDrawerParamList, 'MainDashBoard'>;
 
@@ -44,7 +44,6 @@ const MainDashBoard = () => {
   const [hasCleared, setHasCleared] = useState<boolean>(false);
   const [isChangeDeviceDrawerOpen, setIsChangeDeviceDrawerOpen] = useState(false);
   const [isDeviceNameUpdating, setDeviceNameUpdating] = useState(false);
-  const [mac, setMac] = useState<string|undefined>(undefined);
   const [isHdmiOn, setHdmiOn] = useState<boolean>(false);
   const [currentInput, setCurrentInput] = useState<Priority | null>(null);
   const [protoPort, setProtoPort] = useState<number | undefined>();
@@ -105,13 +104,9 @@ const MainDashBoard = () => {
   };
 
   const theme = useTheme(); // Paper theme
-  const { getMac } = useSysApi();
 
-  const handleWifiIconClick = () => {
-    console.log("handleWifiIconClick >>>>", mac);
-    if(mac) {
-      navigation.navigate("WifiScanner",{deviceId: mac, isBluetoothConnected: false})
-    }    
+  const handleWifiIconRedirect = (mac : string) => {
+    navigation.navigate("WifiScanner",{deviceId: mac, isBluetoothConnected: false})
   }
 
   const handleHdmiInputChnage = (value:boolean) => {
@@ -204,56 +199,13 @@ const MainDashBoard = () => {
           </View>
 
           {/* Wifi Icon + SSID */}
-          <View
-            style={[
-              commonStyles.column,
-              commonStyles.center,
-              { minWidth: 40, marginRight: 8 },
-            ]}
-          >
-            <View onTouchEnd={handleWifiIconClick}>
-              <MaterialIcons
-                name="wifi"
-                size={20}
-                color={theme.colors.onPrimary}
-              />
-            </View>
-            <Text
-              style={{
-                fontSize: 8,
-                color: theme.colors.onPrimary,
-                maxWidth: 40,
-                textAlign: "center",
-              }}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              test wifi
-            </Text>
-          </View>
+          <WifiIconButton key={Number(isChangeDeviceDrawerOpen)} onPress={handleWifiIconRedirect}/>
         </Appbar.Header>
       ),
     });
-  }, [navigation, theme, mac]);
+  }, [navigation, theme, isChangeDeviceDrawerOpen]);
 
-  useEffect(()=>{
-    console.log({mac});
-
-  },[mac])
-
-  useFocusEffect(
-      useCallback(() => {
-
-        const fetchDeviceMac = async () => {
-          const res = await getMac();
-          console.log("fetchDeviceMac >>>",res);
-          if (res.mac) {
-            setMac(res.mac.toUpperCase());
-          }
-        }
-        fetchDeviceMac();
-      }, [])
-    );
+  
 
   return (
     <SafeAreaView style={[commonStyles.container, {backgroundColor:theme.colors.surface}]}>
