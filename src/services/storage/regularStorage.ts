@@ -4,7 +4,7 @@ import { Device } from 'react-native-ble-plx';
 const RECENT_DEVICES_KEY = 'recent_connected_devices';
 const MAX_RECENT_DEVICES = 5;
 const HYPERHDR_PASSWORD_KEY = "hyperhdr_password";
-const DEFAULT_HYPERHDR_PASSWORD = "";
+const DEFAULT_HYPERHDR_PASSWORD = "hyperhdr";
 
 // Initialize MMKV storage
 export const storage = new MMKV();
