@@ -72,8 +72,9 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
   const [menuForWifi, setMenuForWifi] = useState<WifiNetwork | undefined>(undefined);
 
   const [isPermissionPopUpOpen, setIsPermissionPopUpOpen] = useState<boolean>(false);
-  const [isBluetoothPopupOpen, setIsBluetoothPopupOpen] = useState<boolean>(false);
-  const [shouldGoBack, setShouldGoBack] = useState<boolean>(false);
+  // const [isBluetoothPopupOpen, setIsBluetoothPopupOpen] = useState<boolean>(false);
+  // const [bleConnRefresh, setBleConnRefresh] = useState<boolean>(false);
+  const [isBluetoothConnectionError, setIsBluetoothConnectionError] = useState<boolean>(false);
 
   const { bleManager } = useConnection();
   const theme = useTheme();
@@ -86,17 +87,12 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
 
   const connectBleDevice = async (deviceId: string) => {
     if (!bleManager || !deviceId) return;
-    try {
-      // console.log("Connecting to", deviceId);
-      // console.log("bleManager >>>>",bleManager);
-      const connectedDevice = await connectToDevice(bleManager, deviceId);
-      console.log("connected to >>>>>", connectedDevice.id);
-      await connectedDevice.discoverAllServicesAndCharacteristics();
-      handleConnect(connectedDevice);
-      storeRecentDevice(connectedDevice);
-    } catch (error) {
-      console.error("wif Ble Connection error:", error);
-    }
+    
+    const connectedDevice = await connectToDevice(bleManager, deviceId);
+    console.log("connected to >>>>>", connectedDevice.id);
+    await connectedDevice.discoverAllServicesAndCharacteristics();
+    handleConnect(connectedDevice);
+    storeRecentDevice(connectedDevice);
   };
 
   const disConnectBleDevice = async (bleDeviceId: string) => {
@@ -119,7 +115,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
     deviceId: string,
   ): Promise<boolean> => {
 
-    const bluetoothPower = await reqBluetooth(bleManager, () => setIsBluetoothPopupOpen(true));
+    const bluetoothPower = await reqBluetooth(bleManager, () => setIsBluetoothConnectionError(true));
     if (!bluetoothPower) {
       return false;
     }
@@ -190,8 +186,12 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
 
       if (isBluetoothConnected) {
         console.log('Fetching wifilist via BLE...');
-        if (!await checkBluetooth(bleManager)) {
-          console.log("bluetooth suppose to br turned on >>>");
+        // if (!await checkBluetooth(bleManager)) {
+        //   console.log("bluetooth suppose to br turned on >>>");
+        //   return;
+        // }
+        const bluetoothPower = await reqBluetooth(bleManager, () => setIsBluetoothConnectionError(true));
+        if (!bluetoothPower) {
           return;
         }
         console.log("checking ble deviceId in loadWifiLis", { deviceId })
@@ -234,7 +234,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
       }
 
       if (bleDevice?.id) {
-        console.log("Already connected >>>>");
+        console.log("Already connected >>>>", deviceId);
         return;
       }
       setInitLoading(true);
@@ -242,7 +242,23 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
         if (!isBluetoothConnected) {
           console.log("Connect BLE device: ", deviceId);
           // await fakeApi(5000);
-          await handleInputDeviceIdConnect(deviceId);
+          try {
+            await handleInputDeviceIdConnect(deviceId);
+            setIsBluetoothConnectionError(false);
+          } catch (error) {
+            setIsBluetoothConnectionError(true);
+            showToast({
+              message: "Something went wrong, try again!",
+              duration: 5000,
+              action: {
+                label: "Retry",
+                onPress: async () => {
+                  console.log("Retry pressed!");
+                  await handleInputDeviceIdConnect(deviceId.trim());
+                },
+              },
+            });
+          }
         }
       } catch (e) {
         console.warn("BLE init failed:", e);
@@ -251,14 +267,49 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
       }
     };
 
-    init();
+    // 🔹 Always watch Bluetooth state
+    let subscription: { remove: () => void } | undefined;
+
+    const blutoothWatcher = bleManager.onStateChange(async (state) => {
+      console.log("Bluetooth state:", state);
+
+      if (state === State.PoweredOn) {
+        await init();
+        // 🔹 Only subscribe if we have a device AND Bluetooth is ON
+        if (bleDevice?.id && !subscription) {
+          subscription = responseListener();
+          console.log("responseListener subscription applied >>>>>>", subscription);
+        } else {
+          console.log("Skipping responseListener, conditions not met", {
+            globalDeviceId: bleDevice?.id,
+            subscription,
+          });
+        }
+        console.log("blue on >>>>")
+        // setIsbluetoothOn(true);
+      }
+
+      if (state === State.PoweredOff) {
+        bleCleanUp(undefined, subscription);
+        subscription = undefined;
+        console.log("blue off >>>>");
+        // setIsBluetoothPopupOpen(true);
+        // setShouldGoBack(true);
+        setIsBluetoothConnectionError(true);
+        await disConnectBleDevice(deviceId);
+      }
+    }, true); // true = run immediately with current state
 
     return () => {
-      if (!isBluetoothConnected) {
+      // disconnect if bluetooth is connected on this page
+      if (!isBluetoothConnected) { 
         const disconnectBle = async () => await disConnectBleDevice(deviceId);
         disconnectBle();
       }
+
+      bleCleanUp(blutoothWatcher, subscription);
     };
+  // }, [bleManager, deviceId, bleDevice?.id, bleConnRefresh]);
   }, [bleManager, deviceId, bleDevice?.id]);
 
   const bleCleanUp = (
@@ -278,43 +329,43 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      // 🔹 Always watch Bluetooth state
-      let subscription: { remove: () => void } | undefined;
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     // 🔹 Always watch Bluetooth state
+  //     let subscription: { remove: () => void } | undefined;
 
-      const blutoothWatcher = bleManager.onStateChange(async (state) => {
-        console.log("Bluetooth state:", state);
+  //     const blutoothWatcher = bleManager.onStateChange(async (state) => {
+  //       console.log("Bluetooth state:", state);
 
-        if (state === State.PoweredOn) {
-          // 🔹 Only subscribe if we have a device AND Bluetooth is ON
-          if (bleDevice?.id && !subscription) {
-            subscription = responseListener();
-            console.log("responseListener subscription applied >>>>>>", subscription);
-          } else {
-            console.log("Skipping responseListener, conditions not met", {
-              globalDeviceId: bleDevice?.id,
-              subscription,
-            });
-          }
-          console.log("blue on >>>>")
-          // setIsbluetoothOn(true);
-        }
+  //       if (state === State.PoweredOn) {
+  //         // 🔹 Only subscribe if we have a device AND Bluetooth is ON
+  //         if (bleDevice?.id && !subscription) {
+  //           subscription = responseListener();
+  //           console.log("responseListener subscription applied >>>>>>", subscription);
+  //         } else {
+  //           console.log("Skipping responseListener, conditions not met", {
+  //             globalDeviceId: bleDevice?.id,
+  //             subscription,
+  //           });
+  //         }
+  //         console.log("blue on >>>>")
+  //         // setIsbluetoothOn(true);
+  //       }
 
-        if (state === State.PoweredOff) {
-          bleCleanUp(undefined, subscription);
-          subscription = undefined;
-          console.log("blue off >>>>");
-          setIsBluetoothPopupOpen(true);
-          setShouldGoBack(true);
-        }
-      }, true); // true = run immediately with current state
+  //       if (state === State.PoweredOff) {
+  //         bleCleanUp(undefined, subscription);
+  //         subscription = undefined;
+  //         console.log("blue off >>>>");
+  //         setIsBluetoothPopupOpen(true);
+  //         setShouldGoBack(true);
+  //       }
+  //     }, true); // true = run immediately with current state
 
-      return () => {
-        bleCleanUp(blutoothWatcher, subscription);
-      };
-    }, [bleDevice?.id])
-  );
+  //     return () => {
+  //       bleCleanUp(blutoothWatcher, subscription);
+  //     };
+  //   }, [bleDevice?.id])
+  // );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -427,7 +478,7 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
             )}
           </View>
           {(isSaved || isConnected) && (
-            <TouchableOpacity onPress={() => showWifiMenu(wifi)} disabled={isOverAllLoaing}>
+            <TouchableOpacity onPress={() => showWifiMenu(wifi)} disabled={isOverAllLoaing || isBluetoothConnectionError}>
               <MaterialIcons
                 name="more-vert"
                 size={22}
@@ -487,23 +538,17 @@ const WifiListWidget: React.FC<Props> = ({ deviceId, isBluetoothConnected, onBlu
         />
 
         <CommonDialog
-          visible={isBluetoothPopupOpen}
+          visible={isBluetoothConnectionError}
           onDismiss={() => {
-            if (shouldGoBack) {
+            if (isBluetoothConnectionError) {
               return;
             }
-            setIsBluetoothPopupOpen(false)
           }}
+          icon='alert'
           title="Bluetooth required"
-          bodyText={shouldGoBack ? "Bluetooth is off. Go back, turn it on, then try again." : "Please turn on Bluetooth to connect to device."}
-          okText={shouldGoBack ? "Go Back" : "Ok"}
-          onOk={() => {
-            setIsBluetoothPopupOpen(false)
-            if (shouldGoBack) {
-              onBluetoothOff();
-              handleDisconnect();
-            }
-          }}
+          TitleTextStyle={{textAlign:"center"}}
+          bodyText="Your Bluetooth is currently turned off. Please enable it to connect to your device."
+          bodyTextStyle={{textAlign:"center"}}
           showCancel={false}
         />
 

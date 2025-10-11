@@ -6,6 +6,7 @@ type CommonDialogProps = {
     visible: boolean;
     onDismiss?: () => void;
 
+    icon?: string;
     title?: string;
     subtitle?: string;
 
@@ -21,6 +22,7 @@ type CommonDialogProps = {
 
     loading?: boolean;
     isChildrenFirstContent?: boolean;
+    TitleTextStyle?: StyleProp<TextStyle>;
     bodyTextStyle?: StyleProp<TextStyle>;
     dialogStyle?: StyleProp<ViewStyle>;
 };
@@ -28,6 +30,7 @@ type CommonDialogProps = {
 export const CommonDialog: React.FC<CommonDialogProps> = ({
     visible,
     onDismiss,
+    icon,
     title,
     subtitle,
     bodyText,
@@ -39,6 +42,7 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
     showCancel = true,
     loading = false,
     isChildrenFirstContent = false,
+    TitleTextStyle,
     bodyTextStyle,
     dialogStyle,
 }) => {
@@ -53,9 +57,16 @@ export const CommonDialog: React.FC<CommonDialogProps> = ({
                     dialogStyle,
                 ]}>
                 {/* Title */}
+
+                {
+                    icon && (
+                        <Dialog.Icon icon={icon} />
+                    )
+                }
+
                 {
                     title && (
-                        <Dialog.Title>{title}</Dialog.Title>
+                        <Dialog.Title style={TitleTextStyle}>{title}</Dialog.Title>
                     )
                 }
 
